@@ -34,7 +34,7 @@ def main():
         else:
             f_out = open(args.output, 'w')
     if args.column:
-        col = args.column -1
+        col = int(args.column) -1
 
     for line in f_in:
         line = line.strip('\n')
@@ -46,7 +46,7 @@ def main():
     f_in.close()
     f_out.close()
 
-def countMicExTandem(exons, MicEx=36, simmetric=True):
+def countMicExTandem(exons, uEx=36, simmetric=True):
     """return the max sequence $\mu$Ex in tandem on the given array (of exons)
     if simmetric is set to True, the $\mu$Ex must also be simmetric"""
     c_max = c = 0
@@ -58,7 +58,7 @@ def countMicExTandem(exons, MicEx=36, simmetric=True):
             return False
 
     for Ex in exons:
-        if Ex <= MicEx:
+        if Ex <= uEx:
             c += 1
             if simmetric and not isSimmetric(Ex):
                 c = 0
@@ -72,10 +72,11 @@ def ismeg(x):
     intEx = x[1:-1]
     if len(intEx) >=3:
         # if np.median(intEx) <= 36:
-        if countMicExTandem(intEx, MicEx=42) >= 4:
+        if countMicExTandem(intEx, uEx=51) >= 4:
             return True
 
 
 
 if __name__ == '__main__':
+
     main()
