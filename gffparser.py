@@ -52,6 +52,8 @@ def main():
         strand = coords[trans]['strand']
         exons, introns = calcExIntCds(coords[trans])
         print(trans, strand, len(exons), array2str(exons), array2str(introns), sep='\t', file=f_out)
+
+
     f_in.close()
     f_out.close()
 

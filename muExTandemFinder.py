@@ -21,7 +21,7 @@ def main():
 
     f_in = sys.stdin
     f_out = sys.stdout
-    col = 2
+    col = 3
 
     if args.input:
         if not os.path.exists(args.input):
@@ -40,18 +40,18 @@ def main():
         line = line.strip('\n')
         field = line.split('\t')
         exons = str2array(field[col])
-        if ismeg(exons):
+        if has_uExDom(exons):
             print(line, file=f_out)
 
     f_in.close()
     f_out.close()
 
-def countMicExTandem(exons, uEx=36, simmetric=True):
+def countMicExTandem(exons, uEx=36, symmetric=True):
     """return the max sequence $\mu$Ex in tandem on the given array (of exons)
-    if simmetric is set to True, the $\mu$Ex must also be simmetric"""
+    if symmetric is set to True, the $\mu$Ex must also be symmetric"""
     c_max = c = 0
 
-    def isSimmetric(x):
+    def isSymmetric(x):
         if x%3 == 0:
             return True
         else:
@@ -60,7 +60,7 @@ def countMicExTandem(exons, uEx=36, simmetric=True):
     for Ex in exons:
         if Ex <= uEx:
             c += 1
-            if simmetric and not isSimmetric(Ex):
+            if symmetric and not isSymmetric(Ex):
                 c = 0
         else:
             c = 0
@@ -68,11 +68,11 @@ def countMicExTandem(exons, uEx=36, simmetric=True):
             c_max = c
     return c_max
 
-def ismeg(x):
+def has_uExDom(x):
     intEx = x[1:-1]
-    if len(intEx) >=3:
+    if len(intEx) >=4:
         # if np.median(intEx) <= 36:
-        if countMicExTandem(intEx, uEx=51) >= 4:
+        if countMicExTandem(intEx, uEx=60) >= 4:
             return True
 
 
