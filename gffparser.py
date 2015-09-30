@@ -12,13 +12,13 @@ def main():
     parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
     parser.add_argument('-i', '--input', help='input file (default is stdin)')
     parser.add_argument('-o', '--output', help='output file (default is stdout)')
-    # parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
+    parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
 
     args = parser.parse_args()
 
     f_in = sys.stdin
     f_out = sys.stdout
-    # input_format = 'gff3'
+    input_format = 'gff3'
 
     if args.input:
         if not os.path.exists(args.input):
@@ -35,23 +35,15 @@ def main():
             sys.exit('ERROR: %s already exists!!!' % args.output)
         else:
             f_out = open(args.output, 'w')
-    # if args.input_format:
-    #     input_format = args.input_format
+    if args.input_format:
+        input_format = args.input_format
+        if input_format not in ['gff3', 'gtf']:
+            sys.exit('ERROR: %s extension is not supported' % input_format)
 
-    coords = {}
+    coords = parseGFF(f_in, input_format)
 
-    for line in f_in:
-        # stop parsing if fasta is found (assumes fasta will always be AFTER ALL gff fields
-        if line.startswith('>'):
-            break
-
-        line = line.strip('\n')
-        parseGFF(line, coords)
-
-    for trans in coords:
-        strand = coords[trans]['strand']
-        exons, introns = calcExIntCds(coords[trans])
-        print(trans, strand, len(exons), array2str(exons), array2str(introns), sep='\t', file=f_out)
+    # print(len([x for x in coords]))
+    coords2extb(coords, f_out)
 
 
     f_in.close()
@@ -59,19 +51,52 @@ def main():
 
 
 array2str = lambda arr: ','.join(str(x) for x in arr)
+# array2str = lambda arr: ','.join('%s' % x for x in arr)
 str2array = lambda string: np.fromstring(string, sep=',', dtype=int)
 
+def parseGFF(f_in, input_format):
+    coords = {}
+    for line in f_in:
+        # stop parsing if fasta is found (assumes fasta will always be AFTER ALL gff fields
+        if line.startswith('>'):
+            break
 
-def calcExIntCds(transcript_dict):
-    starts = np.fromstring(transcript_dict['exon_starts'], sep=',', dtype=int)
-    ends = np.fromstring(transcript_dict['exon_ends'], sep=',', dtype=int)
+        line = line.strip('\n')
+        lineParser(line, coords, file_format=input_format)
+    return coords
+
+def coords2extb(coords, f_out):
+    for trans in coords:
+        strand = coords[trans]['strand']
+        exons, introns = calc_extb_features(coords[trans])
+        print(trans, strand, len(exons), array2str(exons), array2str(introns), sep='\t', file=f_out)
+
+
+
+
+def calc_extb_features(transcript_dict):
+    starts = str2array(transcript_dict['exon_starts'])
+    ends = str2array(transcript_dict['exon_ends'])
     strand = transcript_dict['strand']
     exons, introns = calcExInt(starts, ends, strand)
 
+    gcoords = ';'.join('%d..%d' % (s, e) for s, e in zip(starts, ends))
+
+    ## CDS
+    if 'CDS_starts' in transcript_dict:
+        phase = str2array(transcript_dict['phase'])
+        cds_s = str2array(transcript_dict['CDS_starts'])
+        cds_e = str2array(transcript_dict['CDS_ends'])
+
+        cdsS, cdsE, cds = calcCDS(cds_s, cds_e, strand)
+        cdsSE = '%d,%d' % (cdsS, cdsE)
+    else:
+        cdsSE = cds = phase = [np.nan]
 
 
-    return exons, introns
 
+    # return exons, introns
+    return exons, cds
 
 def calcExInt(starts, ends, strand):
     exons = ends - starts + 1
@@ -84,12 +109,25 @@ def calcExInt(starts, ends, strand):
     return exons, introns
 
 
+def calcCDS(cds_s, cds_e, strand):
 
-# def calcCDS(trans_dict):
-#     if 'CDS_starts' not in trans_dict:
-#         return np.nan, np.nan
-#     else:
+    cds = cds_e - cds_s + 1
+    if strand == '-':
+        cds_s = cds_s[::-1]
+        cds_e = cds_e[::-1]
 
+    cdsS = cds_s[0]
+    cdsE = cds_e[-1]
+
+    # if strand == '-':
+    #     utr3, utr5 = countUTR(cds_s, cds_e, cdsS, cdsE)
+    # else:
+    #     utr5, utr3 = countUTR(cds_s, cds_e, cdsS, cdsE)
+    #
+    #
+    # cds = np.hstack([np.zeros(utr5), cds, np.zeros(utr3)])
+    # cds = np.array(cds, dtype=int)
+    return cdsS, cdsE, cds
 
 
 
@@ -115,40 +153,57 @@ def attributesParser(field9, file_format='gff3'):
     # pattern = re.compile(r';*(\w+)=([^;]+)')
     if file_format == 'gff3':
         pattern = re.compile(r'(\w+)=([^;]+)')
+        c = 3
     elif file_format == 'gtf':
-        pattern = re.compile(r'[;"\s]+')
+        pattern = re.compile(r'[;\s"]*')
+        c = 2
+    # else:
     # else:
     #     sys.exit('ERROR: %s is not supported (only gtf and gff3 are valid)' % file_format)
     attributes = re.split(pattern, field9)
-    att = dict((k, re.sub(r'^\w+:', '', v)) for k, v in (zip(attributes[1::3], attributes[2::3])))
+    att = dict((k, re.sub(r'^\w+:', '', v)) for k, v in (zip(attributes[1::c], attributes[2::c])))
     # att = dict(zip(attributes[1::3], attributes[2::3]))
     # print(attributes)
+    # print(att)
     return att
 
-def parseGFF(line, coords, file_format='gff'):
+
+def lineParser(line, coords, file_format='gff3'):
     if not line.startswith('#'):
         fields = re.split(r'\t', line)
-        # if file_format == 'gff':
-        #     id = 'ID'
-        #     parent = 'Parent'
-        # if file_format == 'gtf':
-        #     id = 'gene_id'
-        #     parent = 'transcript_id'
 
-
-        if re.match('transcript|mRNA', fields[2]):
-            att = attributesParser(fields[8])
+        if file_format == 'gff3' and re.match('transcript|mRNA', fields[2]):
+        # if re.match('transcript|mRNA', fields[2]):
+            att = attributesParser(fields[8]) #, file_format=file_format)
             # print(att)
-            transID = att['ID']
-            coords[transID] = {'gene': att['Parent'],
+            # if file_format == 'gff3':
+            transc_id = 'ID'
+            gene_id = 'Parent'
+            # elif file_format == 'gtf':
+            #     transc_id = 'transcript_id'
+            #     gene_id = 'gene_id'
+
+            transID = att[transc_id]
+            coords[transID] = {'gene': att[gene_id],
                                'strand': fields[6]}
 
         # if fields[2] == 'exon':
-        if re.match('exon|CDS', fields[2]):
-            att = attributesParser(fields[8])
-            # if 'Parent' in att:
-                # transID = '{}::{}'.format(att['Parent'], fields[2])
-            transID = att['Parent']
+        elif re.match('exon|CDS', fields[2]):
+        # elif re.match('exon', fields[2]):
+            if file_format == 'gff3':
+                transc_id = 'Parent'
+            elif file_format == 'gtf':
+                transc_id = 'transcript_id'
+                gene_id = 'gene_id'
+
+            att = attributesParser(fields[8], file_format=file_format)
+
+            transID = att[transc_id]
+
+            if file_format == 'gtf' and transID not in coords:
+                coords[transID] = {'gene': att[gene_id],
+                                 'strand': fields[6]}
+
             if transID in coords:
                 starts = fields[2] + '_starts'
                 ends = fields[2] + '_ends'
@@ -163,7 +218,6 @@ def parseGFF(line, coords, file_format='gff'):
                     coords[transID][ends] += ',%s' % str(fields[4])
                     if fields[2] == 'CDS':
                         coords[transID]['phase'] += ',%s' % str(fields[7])
-
 
 if __name__ == '__main__':
 
