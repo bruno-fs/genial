@@ -71,9 +71,9 @@ def countMicExTandem(exons, uEx=36, symmetric=True):
 def has_uExDom(x):
     intEx = x[1:-1]
     if len(intEx) >=4:
-        # if np.median(intEx) <= 36:
-        if countMicExTandem(intEx, uEx=60) >= 4:
-            return True
+        if np.median(intEx) > 36:
+            if countMicExTandem(intEx, uEx=51) >= 4:
+                return True
 
 
 
