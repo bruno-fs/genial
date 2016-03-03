@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 __author__ = 'bruno'
 
 import re
@@ -54,6 +55,24 @@ def main():
 array2str = lambda arr: ','.join(str(x) for x in arr)
 # array2str = lambda arr: ','.join('%s' % x for x in arr)
 str2array = lambda string: np.fromstring(string, sep=',', dtype=int)
+
+
+# def str2array(string):
+#     """
+#
+#     Parameters
+#     ----------
+#     string
+#
+#     Returns
+#     -------
+#
+#     """
+#     # string = re.sub(r',\s*$', '', string)
+#     array = np.fromstring(string, sep=',', dtype=int)
+#
+#     return array
+
 
 def parseGFF(f_in, input_format):
     coords = {}
@@ -166,30 +185,6 @@ def countUTR(s, e, cdsS, cdsE):
 #     # print(att)
 #     return att
 
-def attributesParser(field9, file_format='gff3'):
-    if file_format == 'gff3':
-        pattern = re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')
-    if file_format == 'gtf':
-        pattern = re.compile(r'^\s*(\S+)\s+\"([^\"]+)\"\s*')
-
-
-    from html import unescape
-    # html_parser = html.parser.HTMLParser()
-    field9 = unescape(field9)
-
-    attributes = {}
-    atts = re.sub(';\s*$', '', field9)
-    atts = atts.split(';')
-    for att in atts:
-        g = re.search(pattern, att)
-        try:
-            k, v = g.group(1,2)
-            v = re.sub(r'^(transcript|gene):', '', v)
-            attributes[k] = v
-        except:
-            sys.exit('PARSING ERROR: regex %s failed to capture attributes \nLINE: %s' % (str(pattern), field9))
-    return attributes
-
 
 def gff_line_parser(line, coords, file_format='gff3'):
     if not line.startswith('#'):
@@ -197,7 +192,7 @@ def gff_line_parser(line, coords, file_format='gff3'):
 
         if file_format == 'gff3' and re.match('transcript|mRNA', fields[2]):
         # if re.match('transcript|mRNA', fields[2]):
-            att = attributesParser(fields[8]) #, file_format=file_format)
+            att = attributes_parser(fields[8]) #, file_format=file_format)
             # print(att)
             # if file_format == 'gff3':
             transc_id = 'ID'
@@ -218,7 +213,7 @@ def gff_line_parser(line, coords, file_format='gff3'):
                 transc_id = 'transcript_id'
                 gene_id = 'gene_id'
 
-            att = attributesParser(fields[8], file_format=file_format)
+            att = attributes_parser(fields[8], file_format=file_format)
 
             transID = att[transc_id]
 
@@ -249,3 +244,28 @@ if __name__ == '__main__':
     signal(SIGPIPE, SIG_DFL)
 
     main()
+
+
+def attributes_parser(attributes, file_format='gff3'):
+    if file_format == 'gff3':
+        pattern = re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')
+    elif file_format == 'gtf':
+        pattern = re.compile(r'^\s*(\S+)\s+\"([^\"]+)\"\s*')
+    else:
+        sys.exit('Unsupported format: %s')
+
+    from html import unescape
+    attributes = unescape(attributes)
+
+    attrib_dict = {}
+    atts = re.sub(';\s*$', '', attributes)
+    atts = atts.split(';')
+    for att in atts:
+        g = re.search(pattern, att)
+        try:
+            k, v = g.group(1, 2)
+            v = re.sub(r'^(transcript|gene):', '', v)
+            attrib_dict[k] = v
+        except:
+            sys.exit('PARSING ERROR: regex %s failed to parse: "%s"' % (str(pattern), attributes))
+    return attrib_dict
