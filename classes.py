@@ -1,13 +1,6 @@
-# import numpy as np
-#
-# class String(str):
-#     def to_array(self, sep=','):
-#         return np.fromstring(self, sep=sep, dtype=int)
-#
-# class array(np.array):
-#     def to_str(self, sep=','):
-#         return sep.join(str(x) for x in self)
-from gffparser import attributes_parser
+
+
+from gffdict import attributes_parser
 import numpy as np
 
 
@@ -29,36 +22,21 @@ class GFF:
         self.field = line.strip().split('\t')
         assert len(self.field) == 9, '%s doesnt have 9 fields' % line
 
-        col_names = ['seqname',
-                     'source',
-                     'feature',
-                     'start',
-                     'end',
-                     'score',
-                     'strand',
-                     'frame',
-                     'attributes']
+        self.chrom = self.field[0]
+        self.source = self.field[1]
+        self.feature = self.field[2]
+        self.start = self.field[3]
+        self.end = self.field[4]
+        self.score = self.field[5]
+        self.strand = self.field[6]
+        self.frame = self.field[7]
+        self.attributes = self.field[8]
 
-        # quickly set attributes
-        for i, name in enumerate(col_names):
-            # self.name = self.field[i]
-            setattr(self, name, self.field[i])
-
-        # self.attributes = self.field[8]
         self.file_format = file_format
 
     @property
     def attrib_dict(self):
         return attributes_parser(self.attributes, file_format=self.file_format)
-
-
-# class CoordsString(str):
-#     def to_array(self, sep=','):
-#         self = re.sub()
-#         return np.fromstring(self, sep=sep, dtype=int)
-
-from gffparser import str2array
-from gffparser import array2str
 
 
 class GenomicAnnotation:
@@ -122,3 +100,7 @@ class GenomicAnnotation:
         self.ends = self.ends[::-1]
         self.cds_starts = self.cds_starts[::-1]
         self.cds_ends = self.cds_ends[::-1]
+
+
+array2str = lambda arr: ','.join(str(x) for x in arr)
+str2array = lambda string: np.fromstring(string, sep=',', dtype=int)
