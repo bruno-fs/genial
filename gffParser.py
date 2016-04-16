@@ -3,7 +3,7 @@
 import argparse as argp
 import gzip
 import os
-from classes import *
+from .classes import *
 
 __author__ = 'bruno'
 

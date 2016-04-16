@@ -7,7 +7,7 @@ import numpy as np
 array2str = lambda arr: ','.join(str(x) for x in arr)
 str2array = lambda string: np.fromstring(string, sep=',', dtype=int)
 
-randstr = lambda str: 'RandStr_' + str(int(np.random.random()*10**10))
+randstr = lambda: 'RandStr_' + str(int(np.random.random()*10**10))
 
 
 class GffLine:
@@ -194,10 +194,8 @@ class GenomicAnnotation:
             introns = self.starts[1:] - self.ends[:-1]
         return introns
 
-    def __fix_orientation__(self, orientation):
+    def __fix_orientation__(self, orientation='guess'):
         # valid_orientation = ['genomic', 'transcript', 'guess']
-        # assert orientation in valid_orientation, 'orientation "%s" is invalid (possible values ' \
-        #                                          'are %s)' % (orientation, ', '.join(valid_orientation))
 
         if orientation != 'genomic' and self.strand == '-' and self.len > 1:
 
