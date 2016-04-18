@@ -179,6 +179,26 @@ class GFF(OrderedDict):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def to_exons_file(self, f_out: str):
+        import io
+        remember_to_close = False
+        if not isinstance(f_out, io.TextIOWrapper):
+            remember_to_close = True
+            f_out = open(f_out, 'w')
+
+        for rna in self:
+            gff_item = self[rna]
+            annotation = GenomicAnnotation(gff_item.exon_starts, gff_item.exon_ends,
+                                           gff_item.strand, orientation=self.orientation)
+
+            chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[0])
+
+            print(gff_item.id, gff_item.gene_id, chr_str, annotation.len, gff_item.strand,
+                  array2str(annotation.exons), array2str(annotation.introns), array2str(annotation.starts),
+                  file=f_out, sep='\t')
+
+        if remember_to_close:
+            f_out.close()
 
 class GenomicAnnotation(object):
     cds_starts = cds_ends = np.array([np.nan])
@@ -277,21 +297,7 @@ def attributes_parser(attributes, file_format='gff3'):
     return attrib_dict
 
 
-
-def gff_dict2extb(gff_dic: GFF, f_out):
-    for rna in gff_dic:
-        gff_item = gff_dic[rna]
-        annotation = GenomicAnnotation(gff_item.exon_starts, gff_item.exon_ends,
-                                       gff_item.strand, orientation=gff_dic.orientation)
-
-        chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[0])
-
-        print(gff_item.id, gff_item.gene_id, chr_str, annotation.len, gff_item.strand,
-              array2str(annotation.exons), array2str(annotation.introns), array2str(annotation.starts),
-              file=f_out, sep='\t')
-
-
-def gff_parser(file_handle, ff: str):
+def gff_parser(file_handle, ff='Unknown'):
     gff_dict = GFF()
 
     for line in file_handle:

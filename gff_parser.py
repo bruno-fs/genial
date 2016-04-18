@@ -5,11 +5,11 @@ import os
 import sys
 
 try:
-    from extb import gff_parser, gff_dict2extb
+    from extb import gff_parser
     from extb.utils import magic_open, str2array
 
 except ImportError:
-    # from .helper_classes import gff_parser, gff_dict2extb
+    # from .helper_classes import gff_parser
     # from .utils import magic_open, str2array
 
     # get the REAL script dir, even if the script is a link
@@ -22,7 +22,6 @@ except ImportError:
     import importlib
     extb = importlib.import_module(dir_name)
 
-    gff_dict2extb = getattr(extb, 'gff_dict2extb')
     gff_parser = getattr(extb, 'gff_parser')
 
     utils = getattr(extb, 'utils')
@@ -54,7 +53,6 @@ def main():
     input_format = 'Unknown'
     species_name = 'Unknown'
 
-
     if args.input_format:
         input_format = args.input_format
         if input_format not in ['gff3', 'gtf']:
@@ -75,7 +73,6 @@ def main():
             a, *b = species_name.split('_')
             species_name = a[0] + '_' + b[-1]
 
-
     if args.output:
         if args.output == sys.stdout:
             pass
@@ -93,7 +90,7 @@ def main():
     gff_dict = gff_parser(f_in, input_format)
     gff_dict.specie = species_name
 
-    gff_dict2extb(gff_dict, f_out)
+    gff_dict.to_exons_file(f_out)
 
     f_in.close()
     f_out.close()
