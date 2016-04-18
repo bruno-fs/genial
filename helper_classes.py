@@ -95,7 +95,7 @@ class GffLine(object):
             return self.attrib_dict['transcript_id']
 
         else:
-            return rand_id
+            return rand_id()
 
 
 class GffItem(AttribDict):
@@ -133,7 +133,7 @@ class GffItem(AttribDict):
             try:
                 self.gene_id = gff_line.attrib_dict[gene_key]
             except UnboundLocalError:
-                self.gene_id = rand_id
+                self.gene_id = rand_id()
 
             self.chrom = gff_line.chrom
             self.strand = gff_line.strand

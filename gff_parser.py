@@ -32,10 +32,18 @@ except ImportError:
 
 def main():
     arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
-    arg_parser.add_argument('-i', '--input', help='input file (default is stdin)')
-    arg_parser.add_argument('-o', '--output', help='output file (default is stdout)')
+    arg_parser.add_argument('input', nargs='?', help="input file", ) #default=sys.stdin)
+    arg_parser.add_argument('output', nargs='?', help='output file', ) #default=sys.stdout)
+    # arg_parser.add_argument('-i', '--input', help='input file (default is stdin)')
+    # arg_parser.add_argument('-o', '--output', help='output file (default is stdout)')
     arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
-    arg_parser.add_argument('--specie', help='specie name (default: parsed from filename)')
+    arg_parser.add_argument('--specie', help='specie name (default: parse the first cha'
+                                             'racters before a dot on input_file)')
+    arg_parser.add_argument('-l', '--lazy_output_naming', action='store_true',
+                            help='name output file based on specie name\nignored when'
+                                 'output name is provided')
+    arg_parser.add_argument('-s', '--shorten_spec_name', action='store_true',
+                            help='ignored when used with --specie')
 
     args = arg_parser.parse_args()
 
@@ -43,9 +51,9 @@ def main():
     # they will be replaced if their respective args are provided
     f_in = sys.stdin
     f_out = sys.stdout
-    # input_format = 'gff3'
     input_format = 'Unknown'
     species_name = 'Unknown'
+
 
     if args.input_format:
         input_format = args.input_format
@@ -59,14 +67,28 @@ def main():
         else:
             f_in = magic_open(args.input)
 
-        if not args.specie:
-            species_name = args.input.split('.')[0]
+    if args.specie:
+        species_name = args.specie
+    elif args.input:
+        species_name = args.input.split('.')[0]
+        if args.shorten_spec_name:
+            a, *b = species_name.split('_')
+            species_name = a[0] + '_' + b[-1]
+
 
     if args.output:
-        if os.path.exists(args.output):
+        if args.output == sys.stdout:
+            pass
+        elif os.path.exists(args.output):
             sys.exit('ERROR: %s already exists!!!' % args.output)
         else:
             f_out = open(args.output, 'w')
+
+    elif args.lazy_output_naming:
+        if os.path.exists(species_name + '.extb'):
+            sys.exit('ERROR: %s.extb already exists!!!' % species_name)
+        else:
+            f_out = open(species_name + '.extb', 'w')
 
     gff_dict = gff_parser(f_in, input_format)
     gff_dict.specie = species_name
