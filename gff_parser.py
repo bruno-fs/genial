@@ -5,7 +5,7 @@ import os
 import sys
 
 try:
-    from extb import gff_parser, gff_dict2extb
+    from extb import gff_parser
     from extb.utils import magic_open, str2array
 
 except ImportError:
@@ -71,7 +71,7 @@ def main():
     gff_dict = gff_parser(f_in, input_format)
     gff_dict.specie = species_name
 
-    gff_dict2extb(gff_dict, f_out)
+    gff_dict.to_exons_file(f_out)
 
     f_in.close()
     f_out.close()
