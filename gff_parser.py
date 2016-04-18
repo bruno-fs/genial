@@ -53,7 +53,6 @@ def main():
     input_format = 'Unknown'
     species_name = 'Unknown'
 
-
     if args.input_format:
         input_format = args.input_format
         if input_format not in ['gff3', 'gtf']:
@@ -74,7 +73,6 @@ def main():
         if args.shorten_spec_name:
             a, *b = species_name.split('_')
             species_name = a[0] + '_' + b[-1]
-
 
     if args.output:
         if args.output == sys.stdout:
