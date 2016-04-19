@@ -66,7 +66,8 @@ def main():
     if args.specie:
         species_name = args.specie
     elif args.input:
-        species_name = args.input.split('.')[0]
+        species_name = args.input.split('/')[-1]
+        species_name = species_name.split('.')[0]
         if args.shorten_spec_name:
             a, *b = species_name.split('_')
             species_name = a[0] + '_' + b[-1]
