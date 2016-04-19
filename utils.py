@@ -1,8 +1,6 @@
 import numpy as np
 
-
-class UnsupportedFile(Exception):
-    pass
+from .exceptions import UnsupportedFile
 
 
 def detect_mime(path_to_file, uncompress=False):

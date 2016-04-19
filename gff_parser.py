@@ -33,8 +33,6 @@ def main():
     arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
     arg_parser.add_argument('input', nargs='?', help="input file", ) #default=sys.stdin)
     arg_parser.add_argument('output', nargs='?', help='output file', ) #default=sys.stdout)
-    # arg_parser.add_argument('-i', '--input', help='input file (default is stdin)')
-    # arg_parser.add_argument('-o', '--output', help='output file (default is stdout)')
     arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
     arg_parser.add_argument('--specie', help='specie name (default: parse the first cha'
                                              'racters before a dot on input_file)')

@@ -3,11 +3,8 @@ from collections import OrderedDict
 
 import numpy as np
 
+from .exceptions import *
 from .utils import str2array, array2str, rand_id
-
-
-class ParseError(Exception):
-    pass
 
 
 class AttribDict(dict):
@@ -77,6 +74,15 @@ class GffLine(object):
         self.attributes = self.field[8]
 
         self.file_format = file_format
+
+    @property
+    def has_multiple_parents(self):
+        if self.file_format == 'gff3':
+            if 'Parent' in self.attrib_dict:
+                parent = self.attrib_dict['Parent'].split(",")
+                if len(parent) > 1:
+                    return True
+        return False
 
     @property
     def attrib_dict(self):
@@ -200,11 +206,12 @@ class GFF(OrderedDict):
         if remember_to_close:
             f_out.close()
 
+
 class GenomicAnnotation(object):
     cds_starts = cds_ends = np.array([np.nan])
 
     def __init__(self, starts, ends, strand, cds_starts=None, cds_ends=None,
-                 starts_offset=1, orientation='guess', **kwargs):
+                 starts_offset=1, orientation='Unknown', **kwargs):
 
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -245,7 +252,7 @@ class GenomicAnnotation(object):
             introns = self.starts[1:] - self.ends[:-1]
         return introns
 
-    def __fix_orientation__(self, orientation='guess'):
+    def __fix_orientation__(self, orientation='Unknown'):
         # valid_orientation = ['genomic', 'transcript', 'guess']
 
         if orientation != 'genomic' and self.strand == '-' and self.len > 1:
@@ -253,7 +260,7 @@ class GenomicAnnotation(object):
             if orientation == 'transcript':
                 self.__reverse__()
 
-            elif orientation == 'guess':
+            elif orientation == 'Unknown':
                 diff = self.starts[-1] - self.starts[0]
                 if diff < 0:
                     self.__reverse__()
@@ -324,28 +331,36 @@ def gff_parser(file_handle, ff='Unknown'):
                     gff_dict[rna_id] = GffItem(gff_line)
 
             elif re.match('exon|CDS', gff_line.feature):
+                # if gff_line.has_multiple_parents:
+                #     raise MultipleParentsGFF('fields with multiple Parents are currently not supported')
 
-                rna_id = gff_line.id
-
-                if rna_id not in gff_dict:
-                    gff_dict[rna_id] = GffItem(gff_line)
-
-                starts = gff_line.feature + '_starts'
-                ends = gff_line.feature + '_ends'
-
-                gff_dict[rna_id][starts] += '%s,' % gff_line.start
-                gff_dict[rna_id][ends] += '%s,' % gff_line.end
-                if gff_line.feature == 'CDS':
-                    gff_dict[rna_id].frame += '%s,' % gff_line.frame
-
-                if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
-                    arr = str2array(gff_dict[rna_id][starts])
-                    if len(arr) > 1:
-                        dif = arr[-1] - arr[0]
-
-                        if dif > 0:
-                            gff_dict.orientation = 'genomic'
-                        elif dif < 0:
-                            gff_dict.orientation = 'transcript'
+                add_exon_or_cds_to_gff(gff_line, gff_dict)
 
     return gff_dict
+
+
+def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
+    starts = gff_line.feature + '_starts'
+    ends = gff_line.feature + '_ends'
+
+    # support for gff with multiple parents
+    rna_ids = gff_line.id.split(',')
+    for rna_id in rna_ids:
+        if rna_id not in gff_dict:
+            gff_dict[rna_id] = GffItem(gff_line)
+
+        gff_dict[rna_id][starts] += '%s,' % gff_line.start
+        gff_dict[rna_id][ends] += '%s,' % gff_line.end
+        if gff_line.feature == 'CDS':
+            gff_dict[rna_id].frame += '%s,' % gff_line.frame
+
+        # detect orientation of gff
+        if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
+            arr = str2array(gff_dict[rna_id][starts])
+            if len(arr) > 1:
+                dif = arr[-1] - arr[0]
+
+                if dif > 0:
+                    gff_dict.orientation = 'genomic'
+                elif dif < 0:
+                    gff_dict.orientation = 'transcript'
