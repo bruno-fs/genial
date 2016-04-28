@@ -199,7 +199,7 @@ class GFF(OrderedDict):
             annotation = GenomicAnnotation(gff_item.exon_starts, gff_item.exon_ends,
                                            gff_item.strand, orientation=self.orientation)
 
-            chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[0])
+            chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[-1])
 
             print(gff_item.id,
                   gff_item.gene_id,
