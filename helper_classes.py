@@ -43,14 +43,16 @@ def get_format_file(gff_line: str, ffs=['gff3', 'gtf']):
 
     attrib = gff_line.attributes
     ffs = ffs.copy()
-    ff = ffs.pop()
+    try:
+        ff = ffs.pop()
+    except ParseError:
+        raise UnsupportedFile('This file doenst look like gtf/gff')
 
     try:
         attributes_parser(attrib, ff)
     except ParseError:
         ff = get_format_file(gff_line, ffs)
 
-    # print('funcionou', c, ff)
     return ff
 
 
@@ -199,8 +201,15 @@ class GFF(OrderedDict):
 
             chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[0])
 
-            print(gff_item.id, gff_item.gene_id, chr_str, annotation.len, gff_item.strand,
-                  array2str(annotation.exons), array2str(annotation.introns), array2str(annotation.starts),
+            print(gff_item.id,
+                  gff_item.gene_id,
+                  chr_str,
+                  len(annotation),
+                  sum(annotation.exons),
+                  gff_item.strand,
+                  array2str(annotation.exons),
+                  array2str(annotation.introns),
+                  array2str(annotation.starts),
                   file=f_out, sep='\t')
 
         if remember_to_close:
@@ -236,8 +245,7 @@ class GenomicAnnotation(object):
 
         self.__fix_orientation__(orientation)
 
-    @property
-    def len(self):
+    def __len__(self):
         return len(self.starts)
 
     @property
@@ -248,14 +256,13 @@ class GenomicAnnotation(object):
     @property
     def introns(self):
         introns = np.array([np.nan])
-        if self.len > 1:
+        if len(self) > 1:
             introns = self.starts[1:] - self.ends[:-1]
         return introns
 
     def __fix_orientation__(self, orientation='Unknown'):
-        # valid_orientation = ['genomic', 'transcript', 'guess']
 
-        if orientation != 'genomic' and self.strand == '-' and self.len > 1:
+        if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
 
             if orientation == 'transcript':
                 self.__reverse__()
@@ -285,11 +292,11 @@ def attributes_parser(attributes, file_format='gff3'):
     attributes = unescape(attributes)
 
     attrib_dict = {}
-    atts = re.sub(';\s*$', '', attributes)
-    atts = atts.split(';')
+    attribs = re.sub(';\s*$', '', attributes)
+    attribs = attribs.split(';')
     pattern = compile_pattern(file_format)
 
-    for att in atts:
+    for att in attribs:
         g = re.search(pattern, att)
 
         try:
