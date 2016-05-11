@@ -45,8 +45,8 @@ def get_format_file(gff_line: str, ffs=['gff3', 'gtf']):
     ffs = ffs.copy()
     try:
         ff = ffs.pop()
-    except ParseError:
-        raise UnsupportedFile('This file doenst look like gtf/gff')
+    except IndexError:
+        raise UnsupportedFile("This file doesn't look like gtf/gff")
 
     try:
         attributes_parser(attrib, ff)
