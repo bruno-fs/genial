@@ -1,8 +1,7 @@
 import re
 
-from .utils import get_format_file
-from .helper_classes import GFF, GffItem
-from gff.classes import GffLine, GffItem, GFF
+from .gff.line_parser import get_format_file
+from .gff.classes import GffLine, GffItem, GFF
 from .utils import str2array
 
 
@@ -27,7 +26,7 @@ def gff_parser(file_handle, ff='Unknown'):
 
             if re.match('transcript|mRNA', gff_line.feature):
 
-                rna_id = gff_line.id
+                rna_id = gff_line.transcript_id
 
                 if rna_id not in gff_dict:
                     gff_dict[rna_id] = GffItem(gff_line)
@@ -46,7 +45,7 @@ def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
     ends = gff_line.feature + '_ends'
 
     # support for gff with multiple parents
-    rna_ids = gff_line.id.split(',')
+    rna_ids = gff_line.transcript_id.split(',')
     for rna_id in rna_ids:
         if rna_id not in gff_dict:
             gff_dict[rna_id] = GffItem(gff_line)
