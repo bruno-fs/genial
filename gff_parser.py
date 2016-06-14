@@ -4,29 +4,29 @@ import argparse as argp
 import os
 import sys
 
-try:
-    from extb import gff_parser
-    from extb.utils import magic_open, str2array
-
-except ImportError:
-    # from .helper_classes import gff_parser
-    # from .utils import magic_open, str2array
-
-    # get the REAL script dir, even if the script is a link
-    *parent_dir, dir_name = os.path.dirname(os.path.realpath(__file__)).split('/')
-    parent_dir = '/'.join(parent_dir)
-    # add to path
-    sys.path.append(parent_dir)
-
-    # import regardless the module name
-    import importlib
-    extb = importlib.import_module(dir_name)
-
-    gff_parser = getattr(extb, 'gff_parser')
-
-    utils = getattr(extb, 'utils')
-    magic_open = getattr(utils, 'magic_open')
-    str2array = getattr(utils, 'str2array')
+# try:
+from extb.parse_gff import gff_parser
+from extb.utils import magic_open
+#
+# except ImportError:
+#     # from .helper_classes import gff_parser
+#     # from .utils import magic_open, str2array
+#
+#     # get the REAL script dir, even if the script is a link
+#     *parent_dir, dir_name = os.path.dirname(os.path.realpath(__file__)).split('/')
+#     parent_dir = '/'.join(parent_dir)
+#     # add to path
+#     sys.path.append(parent_dir)
+#
+#     # import regardless the module name
+#     import importlib
+#     extb = importlib.import_module(dir_name)
+#
+#     gff_parser = getattr(extb, 'gff_parser')
+#
+#     utils = getattr(extb, 'utils')
+#     magic_open = getattr(utils, 'magic_open')
+#     str2array = getattr(utils, 'str2array')
 
 
 def main():

@@ -1,47 +1,9 @@
 import re
 
-from exceptions import ParseError
-from helper_classes import GFF, get_format_file, GffLine, GffItem
-from utils import str2array
-
-
-def attributes_parser(attributes, file_format='gff3'):
-    def compile_pattern(ff):
-        if ff == 'gff3':
-            return re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')
-        elif ff == 'gtf':
-            return re.compile(r'^\s*(\S+)\s+\"([^\"]+)\"\s*')
-        else:
-            raise Exception('Unsupported format: %s' % ff)
-
-    from html import unescape
-    # unescape HTML characters like &amp;
-    attributes = unescape(attributes)
-    # shamelessly copied from https://github.com/hammerlab/gtfparse/blob/master/gtfparse/line_parsing.py
-    # Catch mistaken semicolons by replacing "xyz;" with "xyz"
-    # Required to do this since the Ensembl GTF for Ensembl release 78 has
-    # gene_name = "PRAMEF6;"
-    # transcript_name = "PRAMEF6;-201"
-    # attributes.replace(';\"', '\"').replace(";-", "-")
-
-    attrib_dict = {}
-    attribs = re.sub(';\s*$', '', attributes)
-    attribs = attribs.split(';')
-    pattern = compile_pattern(file_format)
-
-    for att in attribs:
-        g = re.search(pattern, att)
-
-        try:
-            k, v = g.group(1, 2)
-            v = re.sub(r'^(transcript|gene):', '', v)
-            attrib_dict[k] = v
-        except AttributeError:
-            # TODO: use/make more specific exceptions
-            raise ParseError('regex %s failed to parse %s' % (str(pattern), attributes))
-            # sys.exit('PARSING ERROR: regex %s failed to parse: \n%s' % (str(pattern), attributes))
-
-    return attrib_dict
+from .utils import get_format_file
+from .helper_classes import GFF, GffItem
+from gff.classes import GffLine, GffItem, GFF
+from .utils import str2array
 
 
 def gff_parser(file_handle, ff='Unknown'):
