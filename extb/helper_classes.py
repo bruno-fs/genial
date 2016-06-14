@@ -289,7 +289,14 @@ def attributes_parser(attributes, file_format='gff3'):
             raise Exception('Unsupported format: %s' % ff)
 
     from html import unescape
+    # unescape HTML characters like &amp;
     attributes = unescape(attributes)
+    # shamelessly copied from https://github.com/hammerlab/gtfparse/blob/master/gtfparse/line_parsing.py
+    # Catch mistaken semicolons by replacing "xyz;" with "xyz"
+    # Required to do this since the Ensembl GTF for Ensembl release 78 has
+    # gene_name = "PRAMEF6;"
+    # transcript_name = "PRAMEF6;-201"
+    # attributes.replace(';\"', '\"').replace(";-", "-")
 
     attrib_dict = {}
     attribs = re.sub(';\s*$', '', attributes)
