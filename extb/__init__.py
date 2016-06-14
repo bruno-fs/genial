@@ -1,2 +1,2 @@
 # noinspection PyUnresolvedReferences
-from .helper_classes import gff_parser
+from parse_gff import gff_parser

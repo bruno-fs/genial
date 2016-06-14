@@ -86,7 +86,7 @@ def main():
         else:
             f_out = open(species_name + '.extb', 'w')
 
-    gff_dict = gff_parser(f_in, input_format)
+    gff_dict = gff_parser(f_in)   # , input_format)
     gff_dict.specie = species_name
 
     gff_dict.to_exons_file(f_out)

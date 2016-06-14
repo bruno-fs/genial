@@ -3,6 +3,7 @@ from collections import OrderedDict
 
 import numpy as np
 
+from parse_gff import attributes_parser
 from .exceptions import *
 from .utils import str2array, array2str, rand_id
 
@@ -93,17 +94,52 @@ class GffLine(object):
     # ToDo: URGENT => fix this
     @property
     def id(self):
-        if self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
-            return self.attrib_dict['ID']
 
-        elif re.match('exon|CDS', self.feature) and self.file_format == 'gff3':
-            return self.attrib_dict['Parent']
+        if self.file_format == 'gff3':
+            if re.match('transcript|mRNA', self.feature):
+                return self.attrib_dict['ID']
 
-        elif re.match('exon|CDS', self.feature) and self.file_format == 'gtf':
-            return self.attrib_dict['transcript_id']
+            elif re.match('exon|CDS', self.feature) and self.file_format == 'gff3':
+                return self.attrib_dict['Parent']
+
+            else:
+                return self.attrib_dict['ID']
+
+        elif self.file_format == 'gtf':
+            if re.match('exon|CDS|transcript|mRNA', self.feature):
+                return self.attrib_dict['transcript_id']
+
+            else:
+                return self.attrib_dict['gene_id']
 
         else:
             return rand_id()
+
+    @property
+    def gene_id(self):
+        # gff and gtf differ on how to get this
+        if self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
+                gene_key = 'Parent'
+        elif self.file_format == 'gff3' and self.feature == 'gene':
+            gene_key = 'ID'
+
+        # expected for gtf, but some GFFs have this
+        else:
+            gene_key = 'gene_id'
+
+        return self.attrib_dict[gene_key]
+
+    @property
+    def transcript_id(self):
+        if self.file_format == 'gff3' and re.match('exon|CDS', self.feature):
+            rna_key = 'Parent'
+
+        elif self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
+            rna_key = 'ID'
+        else:
+            rna_key = 'transcript_id'
+
+        return self.attrib_dict[rna_key]
 
 
 class GffItem(AttribDict):
@@ -114,7 +150,8 @@ class GffItem(AttribDict):
 
     """
     def __init__(self, gff_line: GffLine, **kwargs):
-        super().__init__(**kwargs)
+        super(GffItem, self).__init__(**kwargs)
+        # super().__init__(**kwargs)
 
         if gff_line:
             if type(gff_line) == str:
@@ -122,38 +159,14 @@ class GffItem(AttribDict):
 
             assert type(gff_line) == GffLine
 
-            file_format = gff_line.file_format
-
-            if file_format == 'gff3' and re.match('transcript|mRNA', gff_line.feature):
-                gene_key = 'Parent'
-
-            elif re.match('exon|CDS', gff_line.feature):
-                if file_format == 'gtf':
-                    gene_key = 'gene_id'
-
-            self.id = gff_line.id
-            # if the feature is mRNA, transcript, exon or CDS, the id is the same
-            # otherwise, the parse function will ignore the line
-            self.transcript_id = self.id
-
-            # workaround for gene_id.
-            # ToDo: fix this properly
-            try:
-                self.gene_id = gff_line.attrib_dict[gene_key]
-            except UnboundLocalError:
-                self.gene_id = rand_id()
-
+            self.file_format = gff_line.file_format
             self.chrom = gff_line.chrom
             self.strand = gff_line.strand
             self.source = gff_line.source
             self.attrib = gff_line.attrib_dict
 
-        default_keys = {'gene_id',
-                        'transcript_id',
-                        'chrom',
-                        'source',
-                        'strand',
-                        }
+        string_keys = {'gene_id', 'transcript_id', 'chrom',
+                   'source', 'strand', }
 
         coord_keys = {'exon_starts',
                       'exon_ends',
@@ -162,14 +175,15 @@ class GffItem(AttribDict):
                       'frame',  # gff3 uses phase, gff2/gtf uses frame
                       }
 
-        def_keys = default_keys | coord_keys
+        # def keys: union of id + coord_keys
+        def_keys = string_keys | coord_keys
 
         # create default keys/attributes
         for k in def_keys:
             if k in kwargs:
                 self[k] = kwargs[k]
             elif k not in self:
-                if k in default_keys:
+                if k in string_keys:
                     self[k] = None
                 elif k in coord_keys:
                     self[k] = ''
@@ -180,9 +194,11 @@ class GffItem(AttribDict):
         self.attrib.update((k, v) for (k, v) in kwargs if k not in def_keys)
 
 
+
 class GFF(OrderedDict):
     orientation = 'Unknown'
     specie = 'Unknown'
+    file_format = 'Unknown'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -259,6 +275,8 @@ class GenomicAnnotation(object):
         if len(self) > 1:
             introns = self.starts[1:] - self.ends[:-1]
         return introns
+        # for intron in introns:
+        #     yield intron
 
     def __fix_orientation__(self, orientation='Unknown'):
 
@@ -279,102 +297,3 @@ class GenomicAnnotation(object):
         self.cds_ends = self.cds_ends[::-1]
 
 
-def attributes_parser(attributes, file_format='gff3'):
-    def compile_pattern(ff):
-        if ff == 'gff3':
-            return re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')
-        elif ff == 'gtf':
-            return re.compile(r'^\s*(\S+)\s+\"([^\"]+)\"\s*')
-        else:
-            raise Exception('Unsupported format: %s' % ff)
-
-    from html import unescape
-    # unescape HTML characters like &amp;
-    attributes = unescape(attributes)
-    # shamelessly copied from https://github.com/hammerlab/gtfparse/blob/master/gtfparse/line_parsing.py
-    # Catch mistaken semicolons by replacing "xyz;" with "xyz"
-    # Required to do this since the Ensembl GTF for Ensembl release 78 has
-    # gene_name = "PRAMEF6;"
-    # transcript_name = "PRAMEF6;-201"
-    # attributes.replace(';\"', '\"').replace(";-", "-")
-
-    attrib_dict = {}
-    attribs = re.sub(';\s*$', '', attributes)
-    attribs = attribs.split(';')
-    pattern = compile_pattern(file_format)
-
-    for att in attribs:
-        g = re.search(pattern, att)
-
-        try:
-            k, v = g.group(1, 2)
-            v = re.sub(r'^(transcript|gene):', '', v)
-            attrib_dict[k] = v
-        except AttributeError:
-            # TODO: use/make more specific exceptions
-            raise ParseError('regex %s failed to parse %s' % (str(pattern), attributes))
-            # sys.exit('PARSING ERROR: regex %s failed to parse: \n%s' % (str(pattern), attributes))
-
-    return attrib_dict
-
-
-def gff_parser(file_handle, ff='Unknown'):
-    gff_dict = GFF()
-
-    for line in file_handle:
-
-        # stop reading the file when fasta begins
-        # assumes fasta, if present, will always be after all GFF entries
-        if line.startswith('>'):
-            break
-        # ignore comment lines
-        elif line.startswith("#"):
-            pass
-
-        else:
-            if ff == 'Unknown':
-                ff = get_format_file(line)
-
-            gff_line = GffLine(line, file_format=ff)
-
-            if re.match('transcript|mRNA', gff_line.feature):
-
-                rna_id = gff_line.id
-
-                if rna_id not in gff_dict:
-                    gff_dict[rna_id] = GffItem(gff_line)
-
-            elif re.match('exon|CDS', gff_line.feature):
-                # if gff_line.has_multiple_parents:
-                #     raise MultipleParentsGFF('fields with multiple Parents are currently not supported')
-
-                add_exon_or_cds_to_gff(gff_line, gff_dict)
-
-    return gff_dict
-
-
-def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
-    starts = gff_line.feature + '_starts'
-    ends = gff_line.feature + '_ends'
-
-    # support for gff with multiple parents
-    rna_ids = gff_line.id.split(',')
-    for rna_id in rna_ids:
-        if rna_id not in gff_dict:
-            gff_dict[rna_id] = GffItem(gff_line)
-
-        gff_dict[rna_id][starts] += '%s,' % gff_line.start
-        gff_dict[rna_id][ends] += '%s,' % gff_line.end
-        if gff_line.feature == 'CDS':
-            gff_dict[rna_id].frame += '%s,' % gff_line.frame
-
-        # detect orientation of gff
-        if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
-            arr = str2array(gff_dict[rna_id][starts])
-            if len(arr) > 1:
-                dif = arr[-1] - arr[0]
-
-                if dif > 0:
-                    gff_dict.orientation = 'genomic'
-                elif dif < 0:
-                    gff_dict.orientation = 'transcript'

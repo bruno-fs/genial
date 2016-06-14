@@ -34,6 +34,7 @@ def array2str(arr):
 def str2array(string):
     return np.fromstring(string, sep=',', dtype=np.int64)
 
+
 def rand_id():
     import string as s
     chars = s.ascii_lowercase + s.digits
