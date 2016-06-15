@@ -36,7 +36,7 @@ class GenomicAnnotation(object):
             self.cds_starts = cds_starts
             self.cds_ends = cds_ends
 
-        self.__fix_orientation__(orientation)
+        # self.__fix_orientation__(orientation)
 
     def __len__(self):
         return len(self.starts)
@@ -59,6 +59,8 @@ class GenomicAnnotation(object):
     @property
     def cds(self):
         return self.cds_ends - self.cds_starts
+
+
 
     def __fix_orientation__(self, orientation='Unknown'):
 

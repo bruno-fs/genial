@@ -21,15 +21,18 @@ def gff_parser(file_handle, ff='Unknown'):
         else:
             if ff == 'Unknown':
                 ff = get_format_file(line)
+                import sys
+                print(ff, file=sys.stderr)
 
             gff_line = GffLine(line, file_format=ff)
 
             if re.match('transcript|mRNA', gff_line.feature):
 
                 rna_id = gff_line.transcript_id
+                # gene_id = gff_line.attrib_dict['gene_id']
 
                 if rna_id not in gff_dict:
-                    gff_dict[rna_id] = GffItem(gff_line)
+                    gff_dict[rna_id] = GffItem(gff_line) #, gene_id=gene_id)
 
             elif re.match('exon|CDS', gff_line.feature):
                 # if gff_line.has_multiple_parents:
@@ -41,14 +44,28 @@ def gff_parser(file_handle, ff='Unknown'):
 
 
 def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
-    starts = gff_line.feature + '_starts'
-    ends = gff_line.feature + '_ends'
+    from sys import intern
+    starts = intern(gff_line.feature + '_starts')
+    ends = intern(gff_line.feature + '_ends')
 
-    # support for gff with multiple parents
+    # deal with gff with multiple parents
     rna_ids = gff_line.transcript_id.split(',')
     for rna_id in rna_ids:
         if rna_id not in gff_dict:
-            gff_dict[rna_id] = GffItem(gff_line)
+            """
+            Assuming the GFF file is ordered, all transcripts/mRNAs will be declared
+            before their exons, so it is safe to skip it;
+
+            On the other hand, for GTF files it is expected to find both gene_id and transcript_id
+            on its attibute dict. If it has this information, lets use it.
+            otherwise, skip it.
+
+            """
+            if gff_dict.file_format == 'gtf':
+                if gff_line.gene_id:
+                    gff_dict[rna_id] = GffItem(gff_line)
+
+            continue
 
         gff_dict[rna_id][starts] += '%s,' % gff_line.start
         gff_dict[rna_id][ends] += '%s,' % gff_line.end

@@ -166,6 +166,7 @@ def countUTR(s, e, cdsS, cdsE):
 #     # print(att)
 #     return att
 
+
 def attributesParser(field9, file_format='gff3'):
     if file_format == 'gff3':
         pattern = re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')

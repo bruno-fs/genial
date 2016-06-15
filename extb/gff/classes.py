@@ -67,25 +67,36 @@ class GffLine(object):
 
     @property
     def gene_id(self):
-        # gff and gtf differ on how to get this
-        if self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
-                gene_key = 'Parent'
-        elif self.file_format == 'gff3' and self.feature == 'gene':
-            gene_key = 'ID'
-
-        # usual on gtf, some GFFs (from ensembl) have the attribute transcript_id
-        else:
-            gene_key = 'gene_id'
+        # # gff and gtf differ on how to get this
+        # if self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
+        #         gene_key = 'Parent'
+        # elif self.file_format == 'gff3' and self.feature == 'gene':
+        #     gene_key = 'ID'
+        #
+        # # usual on gtf, some GFFs (from ensembl) have the attribute transcript_id
+        # else:
+        #     gene_key = 'gene_id'
 
         try:
-            return self.attrib_dict[gene_key]
+            return self.attrib_dict['gene_id']
+
         except KeyError:
-            return None
+            if self.file_format == 'gff3' and re.search(r'transcript|mRNA', self.feature):
+                gene_key = 'Parent'
+
+            elif self.file_format == 'gff3' and self.feature == 'gene':
+                gene_key = 'ID'
+
+            else:
+                return None
+
+            return self.attrib_dict[gene_key]
+
 
 
     @property
     def transcript_id(self):
-        if self.file_format == 'gff3' and re.match('exon|CDS', self.feature):
+        if self.file_format == 'gff3' and re.match(r'exon|CDS', self.feature):
             rna_key = 'Parent'
 
         elif self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
@@ -125,8 +136,8 @@ class GffItem(AttribDict):
             self.transcript_id = gff_line.transcript_id
 
         string_keys = {
-            # 'gene_id',
-            # 'transcript_id',
+            'gene_id',
+            'transcript_id',
             'chrom',
             'source',
             'strand',
@@ -149,15 +160,15 @@ class GffItem(AttribDict):
                 self[k] = kwargs[k]
             elif k not in self:
                 if k in string_keys:
-                    # self[k] = None
-                    pass
+                    self[k] = None
+
                 elif k in coord_keys:
                     self[k] = ''
         if not self.attrib:
             self.attrib = {}
 
         # update attributes passed on init
-        self.attrib.update((k, v) for (k, v) in kwargs if k not in def_keys)
+        self.attrib.update((k, v) for (k, v) in kwargs.items() if k not in def_keys)
 
 
 class GFF(OrderedDict):
@@ -179,7 +190,8 @@ class GFF(OrderedDict):
         for rna in self:
             gff_item = self[rna]
             annotation = GenomicAnnotation(gff_item.exon_starts, gff_item.exon_ends,
-                                           gff_item.strand, orientation=self.orientation)
+                                           gff_item.strand, orientation=self.orientation,
+                                           cds_starts=gff_item.CDS_starts, cds_ends=gff_item.CDS_ends)
 
             chr_str = '%s:%s-%s' % (gff_item.chrom, annotation.starts[0], annotation.ends[-1])
 
