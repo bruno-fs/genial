@@ -23,8 +23,8 @@ def magic_open(path_to_file, mode='rt'):
     elif mime == 'application/gzip':
         # if detect_mime(path_to_file, uncompress=True) == 'text/plain':
         return gzip.open(path_to_file, mode=mode)
-    else:
-        raise UnsupportedFile('File %s is type %s' % (path_to_file, mime))
+
+    raise UnsupportedFile('File %s is type %s' % (path_to_file, mime))
 
 
 def array2str(arr):
@@ -32,7 +32,15 @@ def array2str(arr):
 
 
 def str2array(string):
-    return np.fromstring(string, sep=',', dtype=np.int64)
+    # return np.fromstring(string, sep=',', dtype=np.int64)
+    import re
+    string = re.sub(r',$', '', string)
+    items = string.split(',')
+    size = len(items)
+    buffer = np.array([int(x) for x in items])
+    arr = Array(shape=(size,), buffer=buffer, dtype=np.int64)
+    return arr
+
 
 
 def rand_id():
@@ -63,3 +71,18 @@ class AttribDict(dict):
             raise AttributeError("attribute %s doesn't exist" % name)
 
 
+# noinspection PyClassHasNoInit
+class Array(np.ndarray):
+    """a subclass from numpy.ndarray
+
+    the ONLY difference is its string representation for 1D arrays
+    (with shape = (n, )) will be provided by array2str
+
+    """
+
+    def __str__(self):
+        tup = self.shape
+        if len(tup) == 1:
+            return array2str(self)
+        else:
+            return super(Array, self).__str__()

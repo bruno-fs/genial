@@ -1,12 +1,13 @@
 import re
 
 from .gff.line_parser import get_format_file
-from .gff.classes import GffLine, GffItem, GFF
+from .gff.classes import GffLine, GFF, GffItem
 from .utils import str2array
 
 
 def gff_parser(file_handle, ff='Unknown'):
     gff_dict = GFF()
+    gff_dict.file_format = ff
 
     for line in file_handle:
 
@@ -19,25 +20,25 @@ def gff_parser(file_handle, ff='Unknown'):
             pass
 
         else:
-            if ff == 'Unknown':
+            # detect format
+            if gff_dict.file_format == 'Unknown':
                 ff = get_format_file(line)
+                gff_dict.file_format = ff
                 import sys
-                print(ff, file=sys.stderr)
+                print("detected format {}".format(ff), file=sys.stderr)
 
             gff_line = GffLine(line, file_format=ff)
 
             if re.match('transcript|mRNA', gff_line.feature):
 
                 rna_id = gff_line.transcript_id
-                # gene_id = gff_line.attrib_dict['gene_id']
 
                 if rna_id not in gff_dict:
-                    gff_dict[rna_id] = GffItem(gff_line) #, gene_id=gene_id)
+                    gff_dict[rna_id] = GffItem(gff_line)
+                    # gff_dict[rna_id] = gff_line
 
             elif re.match('exon|CDS', gff_line.feature):
-                # if gff_line.has_multiple_parents:
-                #     raise MultipleParentsGFF('fields with multiple Parents are currently not supported')
-
+                # print('achei exon')
                 add_exon_or_cds_to_gff(gff_line, gff_dict)
 
     return gff_dict
@@ -47,25 +48,36 @@ def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
     from sys import intern
     starts = intern(gff_line.feature + '_starts')
     ends = intern(gff_line.feature + '_ends')
-
+    # print('dentro da func add')
     # deal with gff with multiple parents
+    # ToDo: find a better way to support multi-parent exon/CDS features
     rna_ids = gff_line.transcript_id.split(',')
     for rna_id in rna_ids:
+        # print('tentando add rna')
         if rna_id not in gff_dict:
             """
             Assuming the GFF file is ordered, all transcripts/mRNAs will be declared
             before their exons, so it is safe to skip it;
 
-            On the other hand, for GTF files it is expected to find both gene_id and transcript_id
-            on its attibute dict. If it has this information, lets use it.
-            otherwise, skip it.
+            On the other hand, some GTF files ONLY have exon and CDS entries, but have
+            gene_id and transcript_id.
+
+            Let's check If this information is available and use it.
+            Otherwise, just skip.
 
             """
+            # print('vamos checar se é gtf?')
             if gff_dict.file_format == 'gtf':
+                # print('é gtf')
                 if gff_line.gene_id:
-                    gff_dict[rna_id] = GffItem(gff_line)
-
-            continue
+                    # print('achei gene')
+                    gff_dict[rna_id] = gff_line
+                else:
+                    continue  # skip gtf w/o gene
+            else:
+                # continue  # skip item for gff not included
+                gff_dict[rna_id] = gff_line
+        # print('vou add esse rna')
 
         gff_dict[rna_id][starts] += '%s,' % gff_line.start
         gff_dict[rna_id][ends] += '%s,' % gff_line.end
@@ -73,6 +85,7 @@ def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
             gff_dict[rna_id].frame += '%s,' % gff_line.frame
 
         # detect orientation of gff
+        # ToDo: create another function to do this
         if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
             arr = str2array(gff_dict[rna_id][starts])
             if len(arr) > 1:

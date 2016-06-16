@@ -56,6 +56,9 @@ def main():
         elif os.path.exists(args.output):
             sys.exit('ERROR: %s already exists!!!' % args.output)
         else:
+            dirname = os.path.dirname(args.output)
+            os.makedirs(dirname, exist_ok=True)
+            print(dirname, file=sys.stderr)
             f_out = open(args.output, 'w')
 
     elif args.lazy_output_naming:
