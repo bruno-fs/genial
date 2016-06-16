@@ -60,23 +60,6 @@ class GffLine(object):
         if len(self.field) != 9:
             raise Exception('%s doesnt have 9 fields' % line)
 
-        # this approach is more beautiful, but my IDE can't guess
-        # completions for this
-        # fieldNames = [
-        #     'chrom',
-        #     'source',
-        #     'feature',
-        #     'start',
-        #     'end',
-        #     'score',
-        #     'strand',
-        #     'frame',
-        #     'attributes',
-        # ]
-        #
-        # for i, name in enumerate(fieldNames):
-        #     setattr(self, name, self.field[i])
-
         self.chrom = self.field[0]
         self.source = self.field[1]
         self.feature = self.field[2]
