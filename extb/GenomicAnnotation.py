@@ -134,8 +134,8 @@ class GenomicAnnotation:
                 self.strand,
                 self.exons,
                 self.introns,
-                self.cds,
-                self.starts,
+                # self.cds,
+                # self.starts,
                 ]
 
             return '\t'.join(stringfy(x) for x in extb)
