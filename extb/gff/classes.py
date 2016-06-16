@@ -1,15 +1,15 @@
 import re
+from sys import intern
 from collections import OrderedDict
 
-from extb.GenomicAnnotation import GenomicAnnotation
 from extb.gff.attrib_parser import attributes_parser
-from extb.utils import AttribDict, array2str
+from extb.utils import AttribDict, InternDict
 
 
 def find_parent(
         child: str,
         parent_of: dict,
-        recursive=True):
+        recursive=False):
 
     """
     Find the parent or great-great-...-great-parent of a child
@@ -27,7 +27,7 @@ def find_parent(
 
     Other Parameters
     ----------------
-    recursive: bool (default: True)
+    recursive: bool (default: False)
         if True, look for greatest-parent of a child.
 
     Returns
@@ -47,6 +47,11 @@ def find_parent(
 
 
 class GffLine(object):
+    field = ['']*9
+
+    def __str__(self):
+        return '\t'.join(self.field)
+
     def __init__(self, line: str, file_format: str = "Unknown"):
 
         assert type(line) is str, '%s not a string' % line
@@ -85,13 +90,17 @@ class GffLine(object):
         self.file_format = file_format
 
     @property
-    def has_multiple_parents(self):
+    def parents_of_exon(self):
+        """for GFF, will return a generator for each parent of an item
+            for GTF, return the transcript_id
+        """
         if self.file_format == 'gff3':
             # if 'Parent' in self.attrib_dict:
             parents = self.attrib_dict['Parent'].split(",")
-            if len(parents) > 1:
-                return True
-        return False
+            for parent in parents:
+                yield parent
+        else:
+            yield self.transcript_id
 
     @property
     def attrib_dict(self):
@@ -99,36 +108,37 @@ class GffLine(object):
 
     @property
     def gene_id(self):
-        # gff and gtf differ on how to get this
-        print('dentro da linha, tentei achar o gene')
         try:
             return self.attrib_dict['gene_id']
 
         except KeyError:
-            if self.file_format == 'gff3' and re.search(r'transcript|mRNA', self.feature):
-                gene_key = 'Parent'
-
-            elif self.file_format == 'gff3' and self.feature == 'gene':
-                gene_key = 'ID'
-
-            else:
-                return None
-
-            return self.attrib_dict[gene_key]
+            return None
 
 
 
     @property
     def transcript_id(self):
+        """
+        For genes, return None. Otherwise, try to return a transcript_id.
+
+        Raises KeyError if not found.
+
+        For GFF format, is prefered to access ID and Parent features
+
+        """
+        if self.feature == 'gene':
+            # return
+            raise KeyError('genes don\'t have transcript_id')
+
         if self.file_format == 'gff3' and re.match(r'exon|CDS', self.feature):
-            rna_key = 'Parent'
+            rna_key = intern('Parent')
 
         elif self.file_format == 'gff3' and re.match('transcript|mRNA', self.feature):
-            rna_key = 'ID'
+            rna_key = intern('ID')
 
         # usual on gtf, some GFFs (from ensembl) have the attribute transcript_id
         else:
-            rna_key = 'transcript_id'
+            rna_key = intern('transcript_id')
 
         return self.attrib_dict[rna_key]
 
@@ -140,13 +150,11 @@ class GffItem(AttribDict):
         the attributes of this object can be accessed as keys from a dict()
 
     """
+
     def __init__(self, gff_line: GffLine = None, **kwargs):
         super(GffItem, self).__init__(**kwargs)
 
         if gff_line:
-            if type(gff_line) == str:
-                gff_line = GffLine(gff_line)
-
             assert type(gff_line) == GffLine
 
             self.file_format = gff_line.file_format
@@ -177,7 +185,7 @@ class GffItem(AttribDict):
 
         dict_attribs = {
             'attrib',
-            'parent_of'
+            'parent_of',
         }
 
         # def keys: union of id + coord_keys
@@ -197,7 +205,7 @@ class GffItem(AttribDict):
                     if not hasattr(self, k):
                         setattr(self, k, {})
 
-        # update attributes passed on init
+        # update other attributes passed on init
         self.attrib.update((k, v) for (k, v) in kwargs.items() if k not in def_keys)
 
     @property
@@ -211,8 +219,7 @@ class GffItem(AttribDict):
             return gene_id
 
         elif self.file_format == 'gff3':
-            parent_of = self.parent_of
-            if parent_of:
+            if self.parent_of:
                 try:
                     return find_parent(self.transcript_id, self.parent_of)
                 except KeyError:
@@ -224,48 +231,47 @@ class GFF(OrderedDict):
     orientation = 'Unknown'
     specie = 'Unknown'
     file_format = 'Unknown'
-    parent_of = {}
-    attributes_of = {}
-
-    # def add_item(self, gff_line: GffLine):
-    #     rna_id = gff_line.transcript_id
-    #     if rna_id not in self:
-    #         self[rna_id] = GffItem(gff_line)
-
-    # def __setitem__(self, *args, **kwargs):
-    #     super(GFF, self).__setitem__(*args, **kwargs)
+    parent_of = InternDict()
+    attributes_of = InternDict()
 
     def __setitem__(self, key, value, **kwargs):
+        value = self._prepare_item(value)
+        # key = intern(key)
+        super(GFF, self).__setitem__(key, value, **kwargs)
+
+    def _prepare_item(self, value):
         if isinstance(value, GffLine):
             value = GffItem(value, parent_of=self.parent_of)
         elif isinstance(value, str):
             GffItem(GffLine(value), parent_of=self.parent_of)
         elif isinstance(value, GffItem):
             value.parent_of = self.parent_of
-        super(GFF, self).__setitem__(key, value, **kwargs)
+        # value = GffItem(value, parent_of=self.parent_of)
+        return value
 
     def __init__(self, *args, **kwargs):
         super(GFF, self).__init__(*args, **kwargs)
 
-    def to_exons_file(self, f_out: str):
-        import io
-        remember_to_close = False
-        if not isinstance(f_out, io.TextIOWrapper):
-            remember_to_close = True
-            f_out = open(f_out, 'w')
+    def add_kinship(self, item: GffLine):
+        if self.file_format == 'gtf':
+            child_key = 'transcript_id'
+            parent_key = 'gene_id'
+        else:
+            child_key = 'ID'
+            parent_key = 'Parent'
 
-        for rna in self:
-            gff_item = self[rna]
-            annotation = GenomicAnnotation(
-                starts=gff_item.exon_starts, ends=gff_item.exon_ends,
-                strand=gff_item.strand, orientation=self.orientation,
-                cds_starts=gff_item.CDS_starts, cds_ends=gff_item.CDS_ends,
-                chrom=gff_item.chrom, transcript_id=gff_item.transcript_id,
-                gene_id=gff_item.gene_id
-            )
+        try:
+            key = item.attrib_dict[child_key]  # child
+        except KeyError:
+            # print(item) # ToDo: use a logger
+            pass
+        else:
+            try:
+                parent = item.attrib_dict[parent_key]
+            except KeyError:
+                pass  # so its a gene. skip
+            else:  # gene wont reach here
+                # deal with multiple parents?
+                self.parent_of[key] = parent
 
-            # print(annotation.format('extb'), file=f_out, sep='\t')
-            print('{}'.format(annotation), file=f_out, sep='\t')
-
-        if remember_to_close:
-            f_out.close()
+            self.attributes_of[key] = item.attributes

@@ -6,6 +6,30 @@ import sys
 
 from extb.parse_gff import gff_parser
 from extb.utils import magic_open
+from extb.GenomicAnnotation import GenomicAnnotation
+
+
+def save_to_file(gff_dict, f_out: str, out_format='extb'):
+    import io
+    remember_to_close = False
+    if not isinstance(f_out, io.TextIOWrapper):
+        remember_to_close = True
+        f_out = open(f_out, 'w')
+
+    for rna in gff_dict:
+        gff_item = gff_dict[rna]
+        annotation = GenomicAnnotation(
+            starts=gff_item.exon_starts, ends=gff_item.exon_ends,
+            strand=gff_item.strand, orientation=gff_dict.orientation,
+            cds_starts=gff_item.CDS_starts, cds_ends=gff_item.CDS_ends,
+            chrom=gff_item.chrom, transcript_id=gff_item.transcript_id,
+            gene_id=gff_item.gene_id
+        )
+
+        print(annotation.format(out_format), file=f_out, sep='\t')
+
+    if remember_to_close:
+        f_out.close()
 
 def main():
     arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
@@ -70,7 +94,7 @@ def main():
     gff_dict = gff_parser(f_in)   # , input_format)
     gff_dict.specie = species_name
 
-    gff_dict.to_exons_file(f_out)
+    save_to_file(gff_dict, f_out)
 
     f_in.close()
     f_out.close()

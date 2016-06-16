@@ -29,55 +29,25 @@ def gff_parser(file_handle, ff='Unknown'):
 
             gff_line = GffLine(line, file_format=ff)
 
-            if re.match('transcript|mRNA', gff_line.feature):
+            if re.match('exon|CDS', gff_line.feature):
+                add_exon(gff_dict, gff_line)
 
-                rna_id = gff_line.transcript_id
-
-                if rna_id not in gff_dict:
-                    gff_dict[rna_id] = GffItem(gff_line)
-                    # gff_dict[rna_id] = gff_line
-
-            elif re.match('exon|CDS', gff_line.feature):
-                # print('achei exon')
-                add_exon_or_cds_to_gff(gff_line, gff_dict)
+            else:
+                gff_dict.add_kinship(gff_line)
 
     return gff_dict
 
 
-def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
+def add_exon(gff_dict: GFF, gff_line: GffLine):
     from sys import intern
     starts = intern(gff_line.feature + '_starts')
     ends = intern(gff_line.feature + '_ends')
-    # print('dentro da func add')
-    # deal with gff with multiple parents
-    # ToDo: find a better way to support multi-parent exon/CDS features
-    rna_ids = gff_line.transcript_id.split(',')
-    for rna_id in rna_ids:
-        # print('tentando add rna')
+
+    # deal with gff with multiple parents_of_exon
+    for rna_id in gff_line.parents_of_exon:
         if rna_id not in gff_dict:
-            """
-            Assuming the GFF file is ordered, all transcripts/mRNAs will be declared
-            before their exons, so it is safe to skip it;
+            gff_dict[rna_id] = gff_line
 
-            On the other hand, some GTF files ONLY have exon and CDS entries, but have
-            gene_id and transcript_id.
-
-            Let's check If this information is available and use it.
-            Otherwise, just skip.
-
-            """
-            # print('vamos checar se é gtf?')
-            if gff_dict.file_format == 'gtf':
-                # print('é gtf')
-                if gff_line.gene_id:
-                    # print('achei gene')
-                    gff_dict[rna_id] = gff_line
-                else:
-                    continue  # skip gtf w/o gene
-            else:
-                # continue  # skip item for gff not included
-                gff_dict[rna_id] = gff_line
-        # print('vou add esse rna')
 
         gff_dict[rna_id][starts] += '%s,' % gff_line.start
         gff_dict[rna_id][ends] += '%s,' % gff_line.end
@@ -95,3 +65,5 @@ def add_exon_or_cds_to_gff(gff_line: GffLine, gff_dict: GFF):
                     gff_dict.orientation = 'genomic'
                 elif dif < 0:
                     gff_dict.orientation = 'transcript'
+
+

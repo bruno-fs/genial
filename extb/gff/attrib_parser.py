@@ -58,8 +58,9 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
     """
 
     attributes.replace(';\"', '\"').replace(";-", "-")
-
-    attrib_dict = {}
+    from extb.utils import InternDict
+    attrib_dict = InternDict()
+    # attrib_dict = {}
     attribs = re.sub(';\s*$', '', attributes)
     attribs = attribs.split(';')
     pattern = compile_pattern(file_format)
@@ -67,8 +68,6 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
     for att in attribs:
         g = re.search(pattern, att)
 
-        from sys import intern
-        # intern strings to save memory
         try:
             k, v = g.group(1, 2)
 
@@ -86,9 +85,9 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
                     # and create an gene_id/transcript_id for GFF files!
 
                     if id_prepended not in attrib_dict:
-                        attrib_dict[intern(id_prepended)] = intern(v)
+                        attrib_dict[id_prepended] = v
 
-            attrib_dict[intern(k)] = intern(v)
+            attrib_dict[k] = v
         except AttributeError:
             # TODO: use/make more specific exceptions
             raise ParseError('regex for %s failed to parse %s' % (file_format, attributes))

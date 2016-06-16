@@ -1,5 +1,5 @@
 import numpy as np
-
+from sys import intern
 from .exceptions import UnsupportedFile
 
 
@@ -27,28 +27,60 @@ def magic_open(path_to_file, mode='rt'):
     raise UnsupportedFile('File %s is type %s' % (path_to_file, mime))
 
 
-def array2str(arr):
-    return ','.join(str(x) for x in arr)
-
-
-def str2array(string):
-    # return np.fromstring(string, sep=',', dtype=np.int64)
-    import re
-    string = re.sub(r',$', '', string)
-    items = string.split(',')
-    size = len(items)
-    buffer = np.array([int(x) for x in items])
-    arr = Array(shape=(size,), buffer=buffer, dtype=np.int64)
-    return arr
-
-
-
 def rand_id():
     import string as s
     chars = s.ascii_lowercase + s.digits
     chars = [x for x in chars]
     _id = ''.join(np.random.choice(chars, 15))
     return "Random_ID_" + _id
+
+
+def array2str(arr):
+    return ','.join(str(x) for x in arr)
+
+
+def stringfy(obj):
+    """
+    I was subclassing numpy.ndarray ONLY to override its print method.
+    Even though it works, I'd have to ALWAYS import it and always enforce its use.
+
+    All because I was to lazy to type str(obj) for some objects and array2str(obj)
+    for others.
+
+    A Better solution was to create a wrapper that would do the job for me:
+    stringfy!
+    """
+
+    if isinstance(obj, np.ndarray):
+        return array2str(obj)
+    return str(obj)
+
+
+def str2array(string):
+    return np.fromstring(string, sep=',', dtype=np.int64)
+    # import re
+    # string = re.sub(r',$', '', string)
+    # items = string.split(',')
+    # size = len(items)
+    # buffer = np.array([int(x) for x in items])
+    # arr = Array(shape=(size,), buffer=buffer, dtype=np.int64)
+    # return arr
+
+# # noinspection PyClassHasNoInit
+# class Array(np.ndarray):
+#     """a subclass from numpy.ndarray
+#
+#     the ONLY difference is its string representation for 1D arrays
+#     (with shape = (n, )) will be provided by array2str
+#
+#     """
+#
+#     def __str__(self):
+#         tup = self.shape
+#         if len(tup) == 1:
+#             return array2str(self)
+#         else:
+#             return super(Array, self).__str__()
 
 
 class AttribDict(dict):
@@ -71,18 +103,9 @@ class AttribDict(dict):
             raise AttributeError("attribute %s doesn't exist" % name)
 
 
-# noinspection PyClassHasNoInit
-class Array(np.ndarray):
-    """a subclass from numpy.ndarray
-
-    the ONLY difference is its string representation for 1D arrays
-    (with shape = (n, )) will be provided by array2str
-
-    """
-
-    def __str__(self):
-        tup = self.shape
-        if len(tup) == 1:
-            return array2str(self)
-        else:
-            return super(Array, self).__str__()
+class InternDict(dict):
+    def __setitem__(self, key, value):
+        # if key and value:
+        key = intern(key)
+        value = intern(value)
+        super(InternDict, self).__setitem__(key, value)

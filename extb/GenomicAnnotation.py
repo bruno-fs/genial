@@ -2,7 +2,7 @@ import re
 
 import numpy as np
 
-from .utils import str2array, array2str
+from .utils import str2array, array2str, stringfy
 
 
 class GenomicAnnotation:
@@ -54,8 +54,12 @@ class GenomicAnnotation:
             cds_starts -= starts_offset
             self.cds_starts = cds_starts
             self.cds_ends = cds_ends
+        else:
+            self.cds_starts = np.array([np.nan])
+            self.cds_ends = np.array([np.nan])
 
         self._fix_orientation(orientation)
+        # self._reverse()
 
     def __len__(self):
         return len(self.starts)
@@ -66,65 +70,87 @@ class GenomicAnnotation:
         return exons
 
     @property
-    def introns(self):
-        introns = np.array([np.nan])
-        if len(self) > 1:
-            introns = self.starts[1:] - self.ends[:-1]
-        return introns
-        # for intron in introns:
-        #     yield intron
+    def internal_exons(self):
+        # first, *internal, last = self.exons
+        # return internal
+        return self.exons[1:-1]
 
+    @property
+    def introns(self):
+        # introns = np.array([np.nan])
+        # # introns = None
+        if len(self) > 1:
+            return self.starts[1:] - self.ends[:-1]
+        return 'NA'
 
     @property
     def cds(self):
-        return self.cds_ends - self.cds_starts
+        if np.isnan(np.sum(self.cds_starts)):  # and self.cds_ends:
+            return 'NA'
+        else:
+            return self.cds_ends - self.cds_starts
+
+    @property
+    def orf_blocks(self):
+        if np.isnan(np.sum(self.cds_starts)):
+            return 'NA'
+        else:
+            return self.cds_ends - self.cds_starts
+
+    @property
+    def orf_size(self):
+        try:
+            return sum(self.orf_blocks)
+        except TypeError:
+            return 'NA'
 
     @property
     def start(self):
         return self.starts[0]
 
     @property
-    def end(self, ei=False):
-        if ei:
-            return 'ei'
+    def end(self):
         return self.ends[-1]
 
+    @end.setter
+    def end(self, value):
+        self.ends[-1] = value
+
     def __str__(self):
-        # super(GenomicAnnotation, self).__str__()
-        # return '%s:%s-%s\t%s' % (self.chrom, self.start + 1, self.end, array2str(self.exons))
-        return '{} exons: {}'.format(self.transcript_id,
-                                     # array2str(
-                                         self.exons)#)
+        return '{} -> {}'.format(self.transcript_id, array2str(self.exons))
 
     def format(self, format):
+
         if format == 'extb':
-            # return str(self)
             chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
             extb = [
                 self.transcript_id,
+                # self.internal_exons,
                 self.gene_id,
                 chr_str,
                 len(self),
                 sum(self.exons),
+                self.orf_size,
                 self.strand,
-                array2str(self.exons),
-                array2str(self.introns),
-                array2str(self.cds),
-                array2str(self.starts),
+                self.exons,
+                self.introns,
+                self.cds,
+                self.starts,
                 ]
-            return '\t'.join(str(x) for x in extb)
+
+            return '\t'.join(stringfy(x) for x in extb)
 
         elif format == 'bed':
             bed = [
                 self.chrom,
                 self.start,
-            ]
-            return '\t'.join(str(x) for x in bed)
+                ]
+
+            return '\t'.join(stringfy(x) for x in bed)
         else:
             super(GenomicAnnotation, self).__format__(format)
 
     def _fix_orientation(self, orientation='Unknown'):
-
         if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
 
             if orientation == 'transcript':
@@ -136,7 +162,11 @@ class GenomicAnnotation:
                     self._reverse()
 
     def _reverse(self):
+        # print('reversing')
         self.starts = self.starts[::-1]
         self.ends = self.ends[::-1]
-        self.cds_starts = self.cds_starts[::-1]
-        self.cds_ends = self.cds_ends[::-1]
+
+        if not np.isnan(np.sum(self.cds_starts)):
+            self.cds_starts = self.cds_starts[::-1]
+            self.cds_ends = self.cds_ends[::-1]
+
