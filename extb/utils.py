@@ -105,7 +105,9 @@ class AttribDict(dict):
 
 class InternDict(dict):
     def __setitem__(self, key, value):
-        # if key and value:
-        key = intern(key)
-        value = intern(value)
+        if key is not None:
+            key = intern(key)
+        if isinstance(value, str):
+            value = intern(value)
+
         super(InternDict, self).__setitem__(key, value)
