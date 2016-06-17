@@ -1,6 +1,6 @@
 import re
 
-from ..exceptions import ParseError, UnsupportedFile
+from extb.exceptions import ParseError, UnsupportedFile
 
 
 def attributes_parser(attributes: str, file_format='gff3') -> dict:
@@ -9,8 +9,8 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
             return re.compile(r'^\s*(\S+)\s*=\s*(.*)\s*$')
         elif ff == 'gtf':
             return re.compile(r'^\s*(\S+)\s+\"([^\"]+)\"\s*')
-        else:
-            raise UnsupportedFile('Unsupported file_format: %s' % ff)
+        # else:
+        #     raise UnsupportedFile('Unsupported file_format: %s' % ff)
 
     # Workarounds for incorrect use of SEMICOLONS
     # ToDo: implement a function for this? is it better to check for each case?
