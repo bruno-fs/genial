@@ -6,6 +6,9 @@ from .utils import str2array, array2str, stringfy
 
 
 class GenomicAnnotation:
+    starts = None
+    ends = None
+    strand = None
     cds_starts = np.array([np.nan])
     cds_ends = np.array([np.nan])
     chrom = None
@@ -33,8 +36,12 @@ class GenomicAnnotation:
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        self.starts = str2array(starts)
-        self.ends = str2array(ends)
+        if type(starts) == str:
+            starts = str2array(starts)
+            ends = str2array(ends)
+
+        self.starts = starts.copy()
+        self.ends = ends.copy()
 
         if not re.match('-|\+', strand):
             raise Exception('invalid strand value: %s' % strand)
@@ -144,6 +151,18 @@ class GenomicAnnotation:
             bed = [
                 self.chrom,
                 self.start,
+                self.end,
+                self.transcript_id,
+                "1000",
+                self.strand,
+                self.start + 100,
+                self.end - 100,
+                # self.cds_starts[0],
+                # self.cds_ends[-1],
+                "200,155,55",
+                len(self),
+                self.exons,
+                self.starts - self.start
                 ]
 
             return '\t'.join(stringfy(x) for x in bed)
