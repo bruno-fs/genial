@@ -104,6 +104,59 @@ class GenomicAnnotation:
         else:
             return self.cds_ends - self.cds_starts
 
+    def exon_orf_contribution(self):
+        if self.cds == 'NA':
+            return np.zeros(self.exons)
+
+        else:
+            start = self.cds_starts[0]
+            stop = self.cds_ends[-1]
+            contrib = np.zeros(self.exons)
+
+            if len(self) == 1:
+                coding = stop - start
+                total = self.ends[-1] - self.starts[0]
+                return np.array([coding/total])
+
+            else:
+                # find exon with start codon
+                for i, g_start in enumerate(self.starts):
+                    if start >= g_start:
+                        startIndex = i
+                        break
+
+                # find exon with stop codon
+                for i, g_end in reversed(list(enumerate(self.ends))):
+                    if stop > g_end:
+                        stopIndex = i + 1
+                        break
+                    elif stop == g_end:
+                        stopIndex = i
+                        break
+
+            for i in range(len(self)):
+                if startIndex <= i <= stopIndex:
+                    contrib[i] = 1
+
+                if i == startIndex:
+                    if start == self.starts[i]:
+                        contrib[i] = 1
+                    else:
+                        contrib[i] = (self.ends[i] - start) / (self.exons[i])
+
+                elif i == stopIndex:
+                    if stop == self.ends[i]:
+                        contrib[i] = 1
+                    else:
+                        contrib[i] = (stop - self.starts[i]) / (self.exons[i])
+
+                else:
+                    contrib[i] = 0
+
+            return contrib
+
+
+
     @property
     def orf_size(self):
         try:
@@ -127,7 +180,6 @@ class GenomicAnnotation:
         return '{} -> {}'.format(self.transcript_id, array2str(self.exons))
 
     def format(self, format):
-
         if format == 'extb':
             chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
             extb = [
@@ -137,7 +189,7 @@ class GenomicAnnotation:
                 chr_str,
                 len(self),
                 sum(self.exons),
-                self.orf_size,
+                # self.orf_size,
                 self.strand,
                 self.exons,
                 self.introns,
@@ -148,6 +200,15 @@ class GenomicAnnotation:
             return '\t'.join(stringfy(x) for x in extb)
 
         elif format == 'bed':
+            if self.cds == 'NA':
+                thickStart = self.start
+                thickStop = self.end
+
+            else:
+                thickStart = self.cds_starts[0]
+                thickStop = self.cds_ends[-1]
+
+
             bed = [
                 self.chrom,
                 self.start,
@@ -155,10 +216,10 @@ class GenomicAnnotation:
                 self.transcript_id,
                 "1000",
                 self.strand,
-                self.start + 100,
-                self.end - 100,
-                # self.cds_starts[0],
-                # self.cds_ends[-1],
+                # self.start,
+                # self.end,
+                thickStart,
+                thickStop,
                 "200,155,55",
                 len(self),
                 self.exons,
@@ -170,7 +231,7 @@ class GenomicAnnotation:
             super(GenomicAnnotation, self).__format__(format)
 
     def _fix_orientation(self, orientation='Unknown'):
-        if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
+        if orientation != 'genomic' and len(self) > 1:
 
             if orientation == 'transcript':
                 self._reverse()

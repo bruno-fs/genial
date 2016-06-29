@@ -26,7 +26,8 @@ def save_to_file(gff_dict, f_out: str, out_format='extb'):
             gene_id=gff_item.gene_id
         )
 
-        print(annotation.format(out_format), file=f_out, sep='\t')
+        # print(annotation.format(out_format), file=f_out, sep='\t')
+        print(annotation.format('bed'), file=f_out, sep='\t')
 
     if remember_to_close:
         f_out.close()
