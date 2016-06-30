@@ -4,12 +4,12 @@ import argparse as argp
 import os
 import sys
 
-from extb.parse_gff import gff_parser
+from extb.gff import parse
 from extb.utils import magic_open
 from extb.GenomicAnnotation import GenomicAnnotation
 
 
-def save_to_file(gff_dict, f_out: str, out_format='extb'):
+def save_to_file(gff_dict, f_out: str, out_format='bed'):
     import io
     remember_to_close = False
     if not isinstance(f_out, io.TextIOWrapper):
@@ -27,7 +27,7 @@ def save_to_file(gff_dict, f_out: str, out_format='extb'):
         )
 
         # print(annotation.format(out_format), file=f_out, sep='\t')
-        print(annotation.format('bed'), file=f_out, sep='\t')
+        print(annotation.format(out_format), file=f_out, sep='\t')
 
     if remember_to_close:
         f_out.close()
@@ -92,7 +92,7 @@ def main():
         else:
             f_out = open(species_name + '.extb', 'w')
 
-    gff_dict = gff_parser(f_in)   # , input_format)
+    gff_dict = parse(f_in)   # , input_format)
     gff_dict.specie = species_name
 
     save_to_file(gff_dict, f_out)

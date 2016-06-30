@@ -218,9 +218,8 @@ class GFF(OrderedDict):
     attributes_of = InternDict()
 
     def __setitem__(self, key, value, **kwargs):
-        value = self._prepare_item(value)
-        # key = intern(key)
-        super(GFF, self).__setitem__(key, value, **kwargs)
+        item = self._prepare_item(value)
+        super(GFF, self).__setitem__(key, item, **kwargs)
 
     def _prepare_item(self, value):
         if isinstance(value, GffLine):
@@ -234,6 +233,12 @@ class GFF(OrderedDict):
 
     def __init__(self, *args, **kwargs):
         super(GFF, self).__init__(*args, **kwargs)
+
+    def add_attribs(self, key, item: GffLine):
+        try:
+            self.attributes_of[key].update(item.attrib_dict)
+        except KeyError:
+            self.attributes_of[key] = item.attrib_dict
 
     def add_kinship(self, item: GffLine):
         if self.file_format == 'gtf':
@@ -256,5 +261,6 @@ class GFF(OrderedDict):
             else:  # gene wont reach here
                 # deal with multiple parents?
                 self.parent_of[key] = parent
+            self.add_attribs(key, item)
 
-            self.attributes_of[key] = item.attributes
+

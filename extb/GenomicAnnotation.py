@@ -200,7 +200,8 @@ class GenomicAnnotation:
             return '\t'.join(stringfy(x) for x in extb)
 
         elif format == 'bed':
-            if self.cds == 'NA':
+            # if self.cds == 'NA':
+            if np.isnan(np.sum(self.cds_starts)):
                 thickStart = self.start
                 thickStop = self.end
 
@@ -231,7 +232,7 @@ class GenomicAnnotation:
             super(GenomicAnnotation, self).__format__(format)
 
     def _fix_orientation(self, orientation='Unknown'):
-        if orientation != 'genomic' and len(self) > 1:
+        if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
 
             if orientation == 'transcript':
                 self._reverse()
