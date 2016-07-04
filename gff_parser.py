@@ -34,8 +34,8 @@ def save_to_file(gff_dict, f_out: str, out_format='bed'):
 
 def main():
     arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
-    arg_parser.add_argument('input', nargs='?', help="input file", ) #default=sys.stdin)
-    arg_parser.add_argument('output', nargs='?', help='output file', ) #default=sys.stdout)
+    arg_parser.add_argument('input', nargs='?', help="input file", )    # default=sys.stdin)
+    arg_parser.add_argument('output', nargs='?', help='output file', )  # default=sys.stdout)
     arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
     arg_parser.add_argument('--specie', help='specie name (default: parse the first cha'
                                              'racters before a dot on input_file)')

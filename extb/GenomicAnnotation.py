@@ -6,8 +6,8 @@ from .utils import str2array, array2str, stringfy
 
 
 class GenomicAnnotation:
-    starts = None
-    ends = None
+    starts = np.array([np.nan])
+    ends = np.array([np.nan])
     strand = None
     cds_starts = np.array([np.nan])
     cds_ends = np.array([np.nan])
@@ -71,6 +71,9 @@ class GenomicAnnotation:
     def __len__(self):
         return len(self.starts)
 
+    def blockCount(self):
+        return len(self.starts)
+
     @property
     def exons(self):
         exons = self.ends - self.starts
@@ -88,30 +91,32 @@ class GenomicAnnotation:
         # # introns = None
         if len(self) > 1:
             return self.starts[1:] - self.ends[:-1]
-        return 'NA'
+        return np.array([np.nan])
 
     @property
     def cds(self):
         if np.isnan(np.sum(self.cds_starts)):  # and self.cds_ends:
-            return 'NA'
+            return np.array([np.nan])
         else:
             return self.cds_ends - self.cds_starts
 
     @property
     def orf_blocks(self):
         if np.isnan(np.sum(self.cds_starts)):
-            return 'NA'
+            return np.array([np.nan])
         else:
             return self.cds_ends - self.cds_starts
 
-    def exon_orf_contribution(self):
-        if self.cds == 'NA':
-            return np.zeros(self.exons)
+    @property
+    def exon_contrib_to_orf(self):
+        # if self.cds == 'NA':
+        if np.isnan(np.sum(self.cds_starts)):
+            return np.zeros_like(self.exons)
 
         else:
             start = self.cds_starts[0]
             stop = self.cds_ends[-1]
-            contrib = np.zeros(self.exons)
+            contrib = np.zeros_like(self.exons, dtype=np.float32)
 
             if len(self) == 1:
                 coding = stop - start
@@ -134,21 +139,30 @@ class GenomicAnnotation:
                         stopIndex = i
                         break
 
-            for i in range(len(self)):
-                if startIndex <= i <= stopIndex:
-                    contrib[i] = 1
+            for i in range(self.blockCount()):
+                if i < startIndex:
+                    contrib[i] = 0
 
-                if i == startIndex:
-                    if start == self.starts[i]:
-                        contrib[i] = 1
-                    else:
-                        contrib[i] = (self.ends[i] - start) / (self.exons[i])
+                elif i == startIndex:
+                    # if start == self.starts[i]:
+                        # contrib[i] = 1
+                        # contrib[i] = self.exons[i] / self.orf_size
+                    # else:
+                        # contrib[i] = (self.ends[i] - start) / (self.ends[i] - self.starts[i])
+                    contrib[i] = (self.ends[i] - start) / self.orf_size
+
+                elif i < stopIndex:
+                    # contrib[i] = 1
+                    contrib[i] = self.exons[i] / self.orf_size
+
 
                 elif i == stopIndex:
-                    if stop == self.ends[i]:
-                        contrib[i] = 1
-                    else:
-                        contrib[i] = (stop - self.starts[i]) / (self.exons[i])
+                    # if stop == self.ends[i]:
+                    #     contrib[i] = 1
+                    # else:
+                        # contrib[i] = (stop - self.starts[i]) / (self.ends[i] - self.starts[i])
+                    contrib[i] = (stop - self.starts[i]) / self.orf_size
+
 
                 else:
                     contrib[i] = 0
@@ -162,7 +176,7 @@ class GenomicAnnotation:
         try:
             return sum(self.orf_blocks)
         except TypeError:
-            return 'NA'
+            return np.array([np.nan])
 
     @property
     def start(self):
@@ -183,15 +197,12 @@ class GenomicAnnotation:
         if format == 'extb':
             chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
             extb = [
-                self.transcript_id,
                 # self.internal_exons,
-                self.gene_id,
                 chr_str,
-                len(self),
-                sum(self.exons),
-                # self.orf_size,
                 self.strand,
-                self.exons,
+                self.transcript_id,
+                self.gene_id,
+                sum(self.exons),
                 self.introns,
                 # self.cds,
                 # self.starts,
@@ -200,15 +211,13 @@ class GenomicAnnotation:
             return '\t'.join(stringfy(x) for x in extb)
 
         elif format == 'bed':
-            # if self.cds == 'NA':
             if np.isnan(np.sum(self.cds_starts)):
                 thickStart = self.start
-                thickStop = self.end
+                thickStop = self.start
 
             else:
                 thickStart = self.cds_starts[0]
                 thickStop = self.cds_ends[-1]
-
 
             bed = [
                 self.chrom,
@@ -222,7 +231,8 @@ class GenomicAnnotation:
                 thickStart,
                 thickStop,
                 "200,155,55",
-                len(self),
+                self.blockCount(),
+                # len(self),
                 self.exons,
                 self.starts - self.start
                 ]

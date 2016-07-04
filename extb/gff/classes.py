@@ -214,8 +214,6 @@ class GFF(OrderedDict):
     orientation = 'Unknown'
     specie = 'Unknown'
     file_format = 'Unknown'
-    parent_of = InternDict()
-    attributes_of = InternDict()
 
     def __setitem__(self, key, value, **kwargs):
         item = self._prepare_item(value)
@@ -233,10 +231,12 @@ class GFF(OrderedDict):
 
     def __init__(self, *args, **kwargs):
         super(GFF, self).__init__(*args, **kwargs)
+        self.parent_of = InternDict()
+        self.attributes_of = InternDict()
 
     def add_attribs(self, key, item: GffLine):
         try:
-            self.attributes_of[key].update(item.attrib_dict)
+            self.attributes_of[key].update(item.attrib_dict.copy())
         except KeyError:
             self.attributes_of[key] = item.attrib_dict
 
@@ -249,7 +249,7 @@ class GFF(OrderedDict):
             parent_key = 'Parent'
 
         try:
-            key = item.attrib_dict[child_key]  # child
+            key = item.attrib_dict[child_key]
         except KeyError:
             # print(item) # ToDo: use a logger
             pass
@@ -261,6 +261,7 @@ class GFF(OrderedDict):
             else:  # gene wont reach here
                 # deal with multiple parents?
                 self.parent_of[key] = parent
+
             self.add_attribs(key, item)
 
 
