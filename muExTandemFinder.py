@@ -46,7 +46,7 @@ def main():
     f_in.close()
     f_out.close()
 
-def countMicExTandem(exons, uEx=36, symmetric=True):
+def countMicExTandem(exons, uEx=36, symmetric=False):
     """return the max sequence $\mu$Ex in tandem on the given array (of exons)
     if symmetric is set to True, the $\mu$Ex must also be symmetric"""
     c_max = c = 0
@@ -73,10 +73,10 @@ def has_uExDom(x):
     exons = x
     if len(exons) == 3:
         #if np.median(exons) > 36:
-        if countMicExTandem(exons, uEx=51, symmetric=True) == 3:
+        if countMicExTandem(exons, uEx=51) == 3:
             return True
     elif len(exons) > 3:
-        if countMicExTandem(exons, uEx=51, symmetric=True) == 3:
+        if countMicExTandem(exons, uEx=51) >= 4:
             return True
     else:
         return False
