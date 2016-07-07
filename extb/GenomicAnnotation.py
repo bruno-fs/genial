@@ -190,6 +190,13 @@ class GenomicAnnotation:
     def end(self, value):
         self.ends[-1] = value
 
+    @property
+    def thickStart(self):
+        pass
+
+    @property
+    def thickEnd
+
     def __str__(self):
         return '{} -> {}'.format(self.transcript_id, array2str(self.exons))
 
