@@ -238,6 +238,34 @@ class GenomicAnnotation:
                 ]
 
             return '\t'.join(stringfy(x) for x in bed)
+
+        elif format == 'bed6':
+            try:
+                from pybedtools import BedTool
+
+            except:
+                # custom function w/o pybedtools
+                block_count = self.blockCount()
+                bed = ['']*block_count
+
+                for block in range(block_count):
+                    line = [
+                        self.chrom,
+                        self.starts[block],
+                        self.ends[block],
+                        self.transcript_id,
+                        "1000",
+                        self.strand]
+
+                    bed[block] = '\t'.join(stringfy(x) for x in line)
+
+                return '\n'.join(bed)
+
+            else:
+                bed = BedTool(self.format('bed'), from_string=True)
+                bed = str(bed.bed6())
+                return bed
+
         else:
             super(GenomicAnnotation, self).__format__(format)
 
