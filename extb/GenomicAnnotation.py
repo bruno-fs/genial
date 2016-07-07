@@ -1,8 +1,7 @@
 import re
-
 import numpy as np
 
-from .utils import str2array, array2str, stringfy
+from .utils import str2array, stringfy
 
 
 class GenomicAnnotation:
@@ -14,6 +13,8 @@ class GenomicAnnotation:
     chrom = None
     transcript_id = None
     gene_id = None
+    thickStart = None
+    thickEnd = None
 
     def __init__(self, starts, ends, strand, cds_starts=None, cds_ends=None,
                  starts_offset=1, orientation='Unknown', **kwargs):
@@ -32,7 +33,7 @@ class GenomicAnnotation:
         orientation
         kwargs
         """
-        # create all custom defined kwargs ;)
+        # create all custom defined kwargs
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -61,6 +62,10 @@ class GenomicAnnotation:
             cds_starts -= starts_offset
             self.cds_starts = cds_starts
             self.cds_ends = cds_ends
+
+            self.thickStart = np.min(cds_starts)
+            self.thickEnd = np.max(cds_ends)
+
         else:
             self.cds_starts = np.array([np.nan])
             self.cds_ends = np.array([np.nan])
@@ -74,12 +79,14 @@ class GenomicAnnotation:
     def blockCount(self):
         return len(self.starts)
 
+    def blockSizes(self):
+        return self.ends - self.starts
+
     @property
     def exons(self):
         exons = self.ends - self.starts
         return exons
 
-    @property
     def internal_exons(self):
         # first, *internal, last = self.exons
         # return internal
@@ -144,15 +151,9 @@ class GenomicAnnotation:
                     contrib[i] = 0
 
                 elif i == startIndex:
-                    # if start == self.starts[i]:
-                        # contrib[i] = 1
-                        # contrib[i] = self.exons[i] / self.orf_size
-                    # else:
-                        # contrib[i] = (self.ends[i] - start) / (self.ends[i] - self.starts[i])
                     contrib[i] = (self.ends[i] - start) / self.orf_size
 
                 elif i < stopIndex:
-                    # contrib[i] = 1
                     contrib[i] = self.exons[i] / self.orf_size
 
 
@@ -169,7 +170,24 @@ class GenomicAnnotation:
 
             return contrib
 
+    def _find_orf_index(self):
+        start = self.thickStart
+        stop = self.thickEnd
+        for i, g_start in enumerate(self.starts):
+            if start >= g_start:
+                startIndex = i
+                break
 
+        # find exon with stop codon
+        for i, g_end in reversed(list(enumerate(self.ends))):
+            if stop > g_end:
+                stopIndex = i + 1
+                break
+            elif stop == g_end:
+                stopIndex = i
+                break
+
+        return startIndex, stopIndex
 
     @property
     def orf_size(self):
@@ -190,15 +208,8 @@ class GenomicAnnotation:
     def end(self, value):
         self.ends[-1] = value
 
-    @property
-    def thickStart(self):
-        pass
-
-    @property
-    def thickEnd
-
     def __str__(self):
-        return '{} -> {}'.format(self.transcript_id, array2str(self.exons))
+        return '{} {}'.format(self.transcript_id, stringfy(self.exons))
 
     def format(self, format):
         if format == 'extb':
