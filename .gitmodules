@@ -1,0 +1,3 @@
+[submodule "megscripts"]
+	path = megscripts
+	url = git@github.com:varnion/megscripts.git
