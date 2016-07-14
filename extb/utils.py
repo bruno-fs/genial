@@ -9,7 +9,7 @@ def detect_mime(path_to_file, uncompress=False):
     mime_from_file = mime.from_file(path_to_file)
     # magic returns byte, not str
     # ToDo: remove decode when issue #98 is closed
-    mime_from_file = mime_from_file.decode()
+    # mime_from_file = mime_from_file.decode()
     return mime_from_file
 
 
