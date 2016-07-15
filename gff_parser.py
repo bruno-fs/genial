@@ -4,7 +4,7 @@ import argparse as argp
 import os
 import sys
 
-from extb.gff import parse
+from extb.gff import parse_to_dict
 from extb.utils import magic_open
 from extb.GenomicAnnotation import GenomicAnnotation
 
@@ -37,7 +37,7 @@ def main():
     arg_parser.add_argument('input', nargs='?', help="input file", )    # default=sys.stdin)
     arg_parser.add_argument('output', nargs='?', help='output file', )  # default=sys.stdout)
     arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
-    arg_parser.add_argument('--specie', help='specie name (default: parse the first cha'
+    arg_parser.add_argument('--specie', help='specie name (default: parse_to_dict the first cha'
                                              'racters before a dot on input_file)')
     arg_parser.add_argument('-l', '--lazy_output_naming', action='store_true',
                             help='name output file based on specie name\nignored when'
@@ -92,7 +92,7 @@ def main():
         else:
             f_out = open(species_name + '.extb', 'w')
 
-    gff_dict = parse(f_in)   # , input_format)
+    gff_dict = parse_to_dict(f_in)   # , input_format)
     gff_dict.specie = species_name
 
     save_to_file(gff_dict, f_out)

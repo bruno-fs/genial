@@ -1,37 +1,17 @@
 import re
 
 from .classes import GFF, GffLine
-from .line_parser import get_format_file
+from .line_parser import guess_kind_of_gff, line_parser
 from extb.utils import str2array
 
 
-def parse(file_handle, ff='Unknown'):
+def parse_to_dict(file_handle, ff='Unknown'):
     gff_dict = GFF()
     gff_dict.file_format = ff
 
-    for line in file_handle:
-
-        # stop reading the file when fasta begins
-        # assumes fasta, if present, will always be after all GFF entries
-        if line.startswith('>'):
-            break
-        # ignore comment lines
-        elif line.startswith("#"):
-            pass
-
-        else:
-            # detect format
-            if gff_dict.file_format == 'Unknown':
-                ff = get_format_file(line)
-                gff_dict.file_format = ff
-                import sys
-                print("detected format {}".format(ff), file=sys.stderr)
-
-            gff_line = GffLine(line, file_format=ff)
-
+    for gff_line in line_parser(file_handle, gff_dict.file_format):
             if re.match('exon|CDS', gff_line.feature):
                 add_exon(gff_dict, gff_line)
-
             else:
                 gff_dict.add_kinship(gff_line)
 

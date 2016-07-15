@@ -3,7 +3,7 @@ from .attrib_parser import attributes_parser
 from .classes import GffLine
 
 
-def get_format_file(gff_line: str, ffs=['gff3', 'gtf']):
+def guess_kind_of_gff(gff_line: str, ffs=['gff3', 'gtf']):
     """Detect whether given attribute field
     Parameters
     ----------
@@ -27,6 +27,28 @@ def get_format_file(gff_line: str, ffs=['gff3', 'gtf']):
     try:
         attributes_parser(attrib, ff)
     except ParseError:
-        ff = get_format_file(gff_line, ffs)
+        ff = guess_kind_of_gff(gff_line, ffs)
 
     return ff
+
+
+def line_parser(file_handle, ff='Unknown'):
+    for line in file_handle:
+
+        # stop reading the file when fasta begins
+        # assumes fasta, if present, will always be after all GFF entries
+        if line.startswith('>'):
+            break
+        # ignore comment lines
+        elif line.startswith("#"):
+            pass
+
+        else:
+            # detect format
+            if ff == 'Unknown':
+                ff = guess_kind_of_gff(line)
+                import sys
+
+                print("detected format {}".format(ff), file=sys.stderr)
+
+            yield GffLine(line, file_format=ff)

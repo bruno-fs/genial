@@ -69,7 +69,7 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
     attrib_dict = InternDict()
     # attrib_dict = {}
 
-    # compile the pattern to parse gff3 or gtf
+    # compile the pattern to parse_to_dict gff3 or gtf
     pattern = compile_pattern(file_format)
     for att in attrib_list:
         g = re.search(pattern, att)
@@ -78,7 +78,7 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
             k, v = g.group(1, 2)
         except AttributeError:
             # TODO: use/make more specific exceptions
-            raise ParseError('regex for %s failed to parse %s' % (file_format, attributes))
+            raise ParseError('regex for %s failed to parse_to_dict %s' % (file_format, attributes))
 
         # if file_format == 'gff3' and re.match(r'ID|Parent', k):
         #     has_ids_prepended = re.match(r'^(transcript|gene):', v)

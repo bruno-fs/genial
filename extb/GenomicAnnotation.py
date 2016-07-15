@@ -48,7 +48,7 @@ class GenomicAnnotation:
             raise Exception('invalid strand value: %s' % strand)
         self.strand = strand
 
-        assert len(self.starts) == len(self.ends)
+        # assert len(self.starts) == len(self.ends)
 
         # make starts 0-based
         self.starts -= starts_offset
