@@ -229,13 +229,14 @@ class GeneAnnotation:
             return '\t'.join(stringfy(x) for x in extb)
 
         elif format == 'bed':
-            if np.isnan(np.sum(self.cds_starts)):
-                thickStart = self.start
-                thickStop = self.start
-
-            else:
-                thickStart = self.cds_starts[0]
-                thickStop = self.cds_ends[-1]
+            # if np.isnan(np.sum(self.cds_starts)):
+            #     thickStart = self.start
+            #     thickStop = self.start
+            #
+            # else:
+            #     thickStart = self.cds_starts[0]
+            #     thickStop = self.cds_ends[-1]
+            #
 
             bed = [
                 self.chrom,
@@ -246,8 +247,8 @@ class GeneAnnotation:
                 self.strand,
                 # self.start,
                 # self.end,
-                thickStart,
-                thickStop,
+                self.thickStart,
+                self.thickEnd,
                 "200,155,55",
                 self.blockCount(),
                 # len(self),

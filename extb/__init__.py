@@ -19,7 +19,7 @@ def bed12_to_GeneAnnot(bed12):
 
     bed12 = bed12.strip()
     bed_field = bed12.split('\t')
-    starts = str2array(bed_field[11])
+    starts = str2array(bed_field[11]) + int(bed_field[1])
     ends = str2array(bed_field[10]) + starts
     name = bed_field[3]
     chrom = bed_field[0]
@@ -28,7 +28,7 @@ def bed12_to_GeneAnnot(bed12):
     thickEnd = bed_field[7]
 
     return GeneAnnotation(starts, ends, strand, chrom=chrom, transcript_id=name,
-                          thickStart=thickStart, thickEnd=thickEnd)
+                          thickStart=thickStart, thickEnd=thickEnd, starts_offset=0)
 
 
 def parse(file_handle, format):
@@ -63,7 +63,7 @@ def parse(file_handle, format):
             yield annotation
 
     # -------------------- bed -----------------------------
-    elif format == 'bed12':
+    elif format == 'bed':
         for line in file_handle:
             yield bed12_to_GeneAnnot(line)
 
