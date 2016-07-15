@@ -4,7 +4,7 @@ import numpy as np
 from .utils import str2array, stringfy
 
 
-class GenomicAnnotation:
+class GeneAnnotation:
     starts = np.array([np.nan])
     ends = np.array([np.nan])
     strand = None
@@ -204,9 +204,9 @@ class GenomicAnnotation:
     def end(self):
         return self.ends[-1]
 
-    @end.setter
-    def end(self, value):
-        self.ends[-1] = value
+    # @end.setter
+    # def end(self, value):
+    #     self.ends[-1] = value
 
     def __str__(self):
         return '{} {}'.format(self.transcript_id, stringfy(self.exons))
@@ -261,7 +261,7 @@ class GenomicAnnotation:
             try:
                 from pybedtools import BedTool
 
-            except:
+            except ImportError:
                 # custom function w/o pybedtools
                 block_count = self.blockCount()
                 bed = ['']*block_count
@@ -285,7 +285,14 @@ class GenomicAnnotation:
                 return bed
 
         else:
-            super(GenomicAnnotation, self).__format__(format)
+            super(GeneAnnotation, self).__format__(format)
+
+    def merge_small_gap(self, gap=25):
+        from pybedtools import BedTool
+        bed = BedTool(self.format('bed6'), from_string=True)
+        bed_merged = bed.intersect(bed).merge(d=gap, c='4,5,6', o='distinct')
+
+        return _bed6_to_GeneAnnot(str(bed_merged))
 
     def _fix_orientation(self, orientation='Unknown'):
         if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
@@ -307,3 +314,17 @@ class GenomicAnnotation:
             self.cds_starts = self.cds_starts[::-1]
             self.cds_ends = self.cds_ends[::-1]
 
+
+def _bed6_to_GeneAnnot(bed6):
+    lines = bed6.splitlines()
+    g_annot = 0
+    for line in lines:
+        chrom, start, end, tranx_id, score, strand = line.split('\t')
+        if g_annot == 0:
+            g_annot = GeneAnnotation(start, end, strand,
+                                     chrom=chrom, transcript_id=tranx_id, starts_offset=0)
+        else:
+            g_annot.starts = np.hstack([g_annot.starts, int(start)])
+            g_annot.ends = np.hstack([g_annot.ends, int(end)])
+
+    return g_annot

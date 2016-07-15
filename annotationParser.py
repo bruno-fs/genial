@@ -4,39 +4,17 @@ import argparse as argp
 import os
 import sys
 
-from extb.gff import parse_to_dict
 from extb.utils import magic_open
-from extb.GenomicAnnotation import GeneAnnotation
+from extb import parse
 
-
-def save_to_file(gff_dict, f_out: str, out_format='bed'):
-    import io
-    remember_to_close = False
-    if not isinstance(f_out, io.TextIOWrapper):
-        remember_to_close = True
-        f_out = open(f_out, 'w')
-
-    for rna in gff_dict:
-        gff_item = gff_dict[rna]
-        annotation = GeneAnnotation(
-            starts=gff_item.exon_starts, ends=gff_item.exon_ends,
-            strand=gff_item.strand, orientation=gff_dict.orientation,
-            cds_starts=gff_item.CDS_starts, cds_ends=gff_item.CDS_ends,
-            chrom=gff_item.chrom, transcript_id=gff_item.transcript_id,
-            gene_id=gff_item.gene_id
-        )
-
-        # print(annotation.format(out_format), file=f_out, sep='\t')
-        print(annotation.format(out_format), file=f_out, sep='\t')
-
-    if remember_to_close:
-        f_out.close()
 
 def main():
     arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
-    arg_parser.add_argument('input', nargs='?', help="input file", )    # default=sys.stdin)
-    arg_parser.add_argument('output', nargs='?', help='output file', )  # default=sys.stdout)
+    arg_parser.add_argument('--input', help="input file", )    # default=sys.stdin)
+    arg_parser.add_argument('--output', help='output file', )  # default=sys.stdout)
     arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
+    arg_parser.add_argument('-t', '--output_format', help='gtf or gff3 (default: gff3)')
+
     arg_parser.add_argument('--specie', help='specie name (default: parse_to_dict the first cha'
                                              'racters before a dot on input_file)')
     arg_parser.add_argument('-l', '--lazy_output_naming', action='store_true',
@@ -56,8 +34,13 @@ def main():
 
     if args.input_format:
         input_format = args.input_format
-        if input_format not in ['gff3', 'gtf']:
+        if input_format not in ['gff3', 'gtf', 'bed12']:
             sys.exit('ERROR: %s extension is not supported' % input_format)
+
+    if args.output_format:
+        output_format = args.output_format
+        if output_format not in ['gff3', 'gtf', 'bed12', 'extb']:
+            sys.exit('ERROR: %s extension is not supported' % output_format)
 
     if args.input:
         if not os.path.exists(args.input):
@@ -92,10 +75,8 @@ def main():
         else:
             f_out = open(species_name + '.extb', 'w')
 
-    gff_dict = parse_to_dict(f_in)   # , input_format)
-    gff_dict.specie = species_name
-
-    save_to_file(gff_dict, f_out)
+    for annotation in parse(f_in, input_format)
+        print(annotation.format(output_format), file=f_out, sep='\t')
 
     f_in.close()
     f_out.close()
