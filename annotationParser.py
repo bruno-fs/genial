@@ -34,12 +34,12 @@ def main():
 
     if args.input_format:
         input_format = args.input_format
-        if input_format not in ['gff3', 'gtf', 'bed12']:
+        if input_format not in ['gff3', 'gtf', 'bed']:
             sys.exit('ERROR: %s extension is not supported' % input_format)
 
     if args.output_format:
         output_format = args.output_format
-        if output_format not in ['gff3', 'gtf', 'bed12', 'extb']:
+        if output_format not in ['gff3', 'gtf', 'bed', 'extb']:
             sys.exit('ERROR: %s extension is not supported' % output_format)
 
     if args.input:
@@ -75,7 +75,7 @@ def main():
         else:
             f_out = open(species_name + '.extb', 'w')
 
-    for annotation in parse(f_in, input_format)
+    for annotation in parse(f_in, input_format):
         print(annotation.format(output_format), file=f_out, sep='\t')
 
     f_in.close()
