@@ -1,5 +1,11 @@
+import re
+
 from .GenomicAnnotation import GeneAnnotation
 from .utils import str2array
+
+input_formats = {'gff3', 'gtf', 'bed'}
+output_formats = {'bed', 'extb'}
+
 
 def bed12_to_GeneAnnot(bed12):
     """
@@ -26,9 +32,15 @@ def bed12_to_GeneAnnot(bed12):
     strand = bed_field[5]
     thickStart = bed_field[6]
     thickEnd = bed_field[7]
+    itemRgb = bed_field[8]
 
-    return GeneAnnotation(starts, ends, strand, chrom=chrom, transcript_id=name,
-                          thickStart=thickStart, thickEnd=thickEnd, starts_offset=0)
+    return GeneAnnotation(starts, ends, strand,
+                          chrom=chrom,
+                          transcript_id=name,
+                          thickStart=thickStart,
+                          thickEnd=thickEnd,
+                          starts_offset=0,
+                          itemRgb=itemRgb)
 
 
 def parse(file_handle, format):
@@ -49,6 +61,11 @@ def parse(file_handle, format):
         gff = parse_to_dict(file_handle, format)
 
         for tranx in gff:
+            # ToDo: support fivePrime and threePrime UTR elements
+            if re.match(r'\s*$', gff[tranx].exon_starts):
+                gff[tranx].exon_starts = gff[tranx].CDS_starts
+                gff[tranx].exon_ends = gff[tranx].CDS_ends
+
             annotation = GeneAnnotation(
                 starts=gff[tranx].exon_starts,
                 ends=gff[tranx].exon_ends,
@@ -66,5 +83,3 @@ def parse(file_handle, format):
     elif format == 'bed':
         for line in file_handle:
             yield bed12_to_GeneAnnot(line)
-
-

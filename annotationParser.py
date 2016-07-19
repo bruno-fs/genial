@@ -4,79 +4,90 @@ import argparse as argp
 import os
 import sys
 
+import numpy as np
+
 from extb.utils import magic_open
-from extb import parse
+from extb import parse, input_formats, output_formats
 
 
 def main():
-    arg_parser = argp.ArgumentParser(description="extract blockSizes from a gff file")
-    arg_parser.add_argument('--input', help="input file", )    # default=sys.stdin)
-    arg_parser.add_argument('--output', help='output file', )  # default=sys.stdout)
-    arg_parser.add_argument('-f', '--input_format', help='gtf or gff3 (default: gff3)')
-    arg_parser.add_argument('-t', '--output_format', help='gtf or gff3 (default: gff3)')
+    ap = argp.ArgumentParser(description="parse annotation files")
+    ap.add_argument('-i', '--input',
+                    help="input file. to read from pipe, use the argument 'stdin'")
+    ap.add_argument('-o', '--output',
+                    help='output file', default=sys.stdout)
+    ap.add_argument('-f', '--input_format',
+                    help='input file format (supported formats: %s)' % ', '.join(input_formats),
+                    default='bed')
+    ap.add_argument('-t', '--output_format',
+                    help='output file format (supported formats: %s)' % ', '.join(output_formats),
+                    default='bed')
+    ap.add_argument('-mg', '--merge_small_gaps', type=int, default=False)
+    ap.add_argument('-igs', '--ignore_gaps_smaller_than', type=int, default=False)
+    ap.add_argument('-igb', '--ignore_gaps_bigger_than', type=int, default=False)
 
-    arg_parser.add_argument('--specie', help='specie name (default: parse_to_dict the first cha'
-                                             'racters before a dot on input_file)')
-    arg_parser.add_argument('-l', '--lazy_output_naming', action='store_true',
-                            help='name output file based on specie name\nignored when'
-                                 'output name is provided')
-    arg_parser.add_argument('-s', '--shorten_spec_name', action='store_true',
-                            help='ignored when used with --specie')
-
-    args = arg_parser.parse_args()
-
-    # default values
-    # they will be replaced if their respective args are provided
-    f_in = sys.stdin
-    f_out = sys.stdout
-    input_format = 'Unknown'
-    species_name = 'Unknown'
+    args = ap.parse_args()
 
     if args.input_format:
         input_format = args.input_format
-        if input_format not in ['gff3', 'gtf', 'bed']:
-            sys.exit('ERROR: %s extension is not supported' % input_format)
+        if input_format not in input_formats:
+            raise SystemExit('ERROR: %s extension is not supported' % input_format)
 
     if args.output_format:
         output_format = args.output_format
-        if output_format not in ['gff3', 'gtf', 'bed', 'extb']:
-            sys.exit('ERROR: %s extension is not supported' % output_format)
+        if output_format not in output_formats:
+            raise SystemExit('ERROR: %s extension is not supported' % output_format)
 
     if args.input:
-        if not os.path.exists(args.input):
-            sys.exit("ERROR: file %s doesn't exist" % args.input)
-
+        if args.input == 'stdin':
+            f_in = sys.stdin
+        elif not os.path.exists(args.input):
+            raise SystemExit("ERROR: input file %s doesn't exist" % args.input)
         else:
             f_in = magic_open(args.input)
-
-    if args.specie:
-        species_name = args.specie
-    elif args.input:
-        species_name = args.input.split('/')[-1]
-        species_name = species_name.split('.')[0]
-        if args.shorten_spec_name:
-            a, *b = species_name.split('_')
-            species_name = a[0] + b[-1]
+    else:
+        # ap.print_help()
+        ap.print_usage()
+        quit()
 
     if args.output:
         if args.output == sys.stdout:
-            pass
+            f_out = sys.stdout
+
         elif os.path.exists(args.output):
-            sys.exit('ERROR: %s already exists!!!' % args.output)
+            raise SystemExit('ERROR: %s already exists!!!' % args.output)
+
         else:
-            dirname = os.path.dirname(args.output)
-            os.makedirs(dirname, exist_ok=True)
-            print(dirname, file=sys.stderr)
+            # dirname = os.path.dirname(args.output)
+            # os.makedirs(dirname, exist_ok=True)
+            # print('created dir', dirname, file=sys.stderr)
             f_out = open(args.output, 'w')
 
-    elif args.lazy_output_naming:
-        if os.path.exists(species_name + '.extb'):
-            sys.exit('ERROR: %s.extb already exists!!!' % species_name)
-        else:
-            f_out = open(species_name + '.extb', 'w')
-
     for annotation in parse(f_in, input_format):
+        if annotation.blockCount() > 1:
+            if args.merge_small_gaps:
+                small_gap = args.merge_small_gaps
+                annotation = annotation.merge_small_gap(small_gap)
+
+            # ignore small introns
+            if args.ignore_gaps_smaller_than:
+                small_gap = args.ignore_gaps_smaller_than
+                gaps = annotation.introns
+                small_gaps_count = np.sum(gaps <= small_gap)
+                if small_gaps_count > 0:
+                    continue
+
+            # ignore HUGE introns
+            if args.ignore_gaps_bigger_than:
+                huge_gap = args.ignore_gaps_bigger_than
+                gaps = annotation.introns
+                huge_gaps_count = np.sum(gaps > huge_gap)
+                if huge_gaps_count > 0:
+                    continue
+        # try:
         print(annotation.format(output_format), file=f_out, sep='\t')
+        # except IndexError:
+        #     print(annotation)
 
     f_in.close()
     f_out.close()

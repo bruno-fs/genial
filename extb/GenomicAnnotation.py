@@ -4,17 +4,33 @@ import numpy as np
 from .utils import str2array, stringfy
 
 
+def _bed6_to_GeneAnnot(bed6):
+    # print(bed6)
+    lines = bed6.splitlines()
+    g_annot = 0
+    for line in lines:
+        chrom, start, end, name, score, strand = line.split('\t')
+        if g_annot == 0:
+            g_annot = GeneAnnotation(start, end, strand,
+                chrom=chrom, transcript_id=name, starts_offset=0)
+        else:
+            g_annot.starts = np.hstack([g_annot.starts, int(start)])
+            g_annot.ends = np.hstack([g_annot.ends, int(end)])
+
+    return g_annot
+
+
 class GeneAnnotation:
-    starts = np.array([np.nan])
-    ends = np.array([np.nan])
-    strand = None
-    cds_starts = np.array([np.nan])
-    cds_ends = np.array([np.nan])
-    chrom = None
-    transcript_id = None
-    gene_id = None
-    thickStart = None
-    thickEnd = None
+    # starts = np.array([np.nan])
+    # ends = np.array([np.nan])
+    # strand = None
+    # cds_starts = np.array([np.nan])
+    # cds_ends = np.array([np.nan])
+    # chrom = None
+    # transcript_id = None
+    # gene_id = None
+    # thickStart = None
+    # thickEnd = None
 
     def __init__(self, starts, ends, strand, cds_starts=None, cds_ends=None,
                  starts_offset=1, orientation='Unknown', **kwargs):
@@ -33,7 +49,19 @@ class GeneAnnotation:
         orientation
         kwargs
         """
-        # create all custom defined kwargs
+
+        # self.starts = np.array([np.nan])
+        # self.ends = np.array([np.nan])
+        # self.strand = None
+        # self.cds_starts = np.array([np.nan])
+        # self.cds_ends = np.array([np.nan])
+        self.chrom = None
+        self.transcript_id = None
+        self.gene_id = None
+        self.thickStart = None
+        self.thickEnd = None
+
+        # create/update all custom defined kwargs
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -208,92 +236,26 @@ class GeneAnnotation:
     # def end(self, value):
     #     self.ends[-1] = value
 
-    def __str__(self):
-        return '{} {}'.format(self.transcript_id, stringfy(self.exons))
+    def BedTool(self, format='bed'):
+        try:
+            from pybedtools import BedTool
+        except ImportError:
+            raise ImportError("pybedtools is required for this function")
 
-    def format(self, format):
-        if format == 'extb':
-            chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
-            extb = [
-                # self.internal_exons,
-                chr_str,
-                self.strand,
-                self.transcript_id,
-                self.gene_id,
-                sum(self.exons),
-                self.introns,
-                # self.cds,
-                # self.starts,
-                ]
-
-            return '\t'.join(stringfy(x) for x in extb)
-
-        elif format == 'bed':
-            # if np.isnan(np.sum(self.cds_starts)):
-            #     thickStart = self.start
-            #     thickStop = self.start
-            #
-            # else:
-            #     thickStart = self.cds_starts[0]
-            #     thickStop = self.cds_ends[-1]
-            #
-
-            bed = [
-                self.chrom,
-                self.start,
-                self.end,
-                self.transcript_id,
-                "1000",
-                self.strand,
-                # self.start,
-                # self.end,
-                self.thickStart,
-                self.thickEnd,
-                "200,155,55",
-                self.blockCount(),
-                # len(self),
-                self.exons,
-                self.starts - self.start
-                ]
-
-            return '\t'.join(stringfy(x) for x in bed)
-
-        elif format == 'bed6':
-            try:
-                from pybedtools import BedTool
-
-            except ImportError:
-                # custom function w/o pybedtools
-                block_count = self.blockCount()
-                bed = ['']*block_count
-
-                for block in range(block_count):
-                    line = [
-                        self.chrom,
-                        self.starts[block],
-                        self.ends[block],
-                        self.transcript_id,
-                        "1000",
-                        self.strand]
-
-                    bed[block] = '\t'.join(stringfy(x) for x in line)
-
-                return '\n'.join(bed)
-
-            else:
-                bed = BedTool(self.format('bed'), from_string=True)
-                bed = str(bed.bed6())
-                return bed
-
-        else:
-            super(GeneAnnotation, self).__format__(format)
+        return BedTool(self.format(format), from_string=True)
 
     def merge_small_gap(self, gap=25):
-        from pybedtools import BedTool
-        bed = BedTool(self.format('bed6'), from_string=True)
-        bed_merged = bed.intersect(bed).merge(d=gap, c='4,5,6', o='distinct')
-
-        return _bed6_to_GeneAnnot(str(bed_merged))
+        # from pybedtools import BedTool
+        # bed = BedTool(self.format('bed6'), from_string=True)
+        gaps = self.introns
+        # if it has at least one small gap, call bedtools merge
+        numb_of_small_gaps = np.sum(gaps[gaps <= gap])
+        if numb_of_small_gaps:
+            # self = self.merge_small_gap(gap)
+            bed = self.BedTool('bed6')
+            bed_merged = bed.intersect(bed).merge(d=gap, c='4,5,6', o='distinct')
+            return _bed6_to_GeneAnnot(str(bed_merged))
+        return self
 
     def _fix_orientation(self, orientation='Unknown'):
         if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
@@ -315,17 +277,81 @@ class GeneAnnotation:
             self.cds_starts = self.cds_starts[::-1]
             self.cds_ends = self.cds_ends[::-1]
 
+    def __str__(self):
+        return '{} {}'.format(self.transcript_id, stringfy(self.exons))
 
-def _bed6_to_GeneAnnot(bed6):
-    lines = bed6.splitlines()
-    g_annot = 0
-    for line in lines:
-        chrom, start, end, tranx_id, score, strand = line.split('\t')
-        if g_annot == 0:
-            g_annot = GeneAnnotation(start, end, strand,
-                                     chrom=chrom, transcript_id=tranx_id, starts_offset=0)
+    def format(self, format):
+        if format == 'extb':
+            chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
+            extb = [
+                # self.internal_exons,
+                chr_str,
+                self.strand,
+                self.transcript_id,
+                self.gene_id,
+                self.blockCount(),
+                sum(self.exons),
+                self.exons,
+                self.introns,
+                # self.cds,
+                # self.starts,
+                ]
+
+            return '\t'.join(stringfy(x) for x in extb)
+
+        elif format == 'bed':
+            # if np.isnan(np.sum(self.cds_starts)):
+            #     thickStart = self.start
+            #     thickStop = self.start
+            #
+            # else:
+            #     thickStart = self.cds_starts[0]
+            #     thickStop = self.cds_ends[-1]
+            #
+            if hasattr(self, 'itemRgb'):
+                item_rgb = self.itemRgb
+            else:
+                item_rgb = "200,155,55"
+
+            if self.thickStart and self.thickEnd:
+                thickStart = self.thickStart
+                thickEnd = self.thickEnd
+            else:
+                thickStart = thickEnd = self.start
+
+            bed = [
+                self.chrom,
+                self.start,
+                self.end,
+                self.transcript_id,
+                "1000",
+                self.strand,
+                thickStart,
+                thickEnd,
+                item_rgb,
+                self.blockCount(),
+                self.exons,
+                self.starts - self.start
+                ]
+
+            return '\t'.join(stringfy(x) for x in bed)
+
+        elif format == 'bed6':
+            block_count = self.blockCount()
+            bed = ['']*block_count
+
+            for block in range(block_count):
+                line = [
+                    self.chrom,
+                    self.starts[block],
+                    self.ends[block],
+                    self.transcript_id,
+                    "1000",
+                    self.strand]
+
+                bed[block] = '\t'.join(stringfy(x) for x in line)
+
+            return '\n'.join(bed)
+
         else:
-            g_annot.starts = np.hstack([g_annot.starts, int(start)])
-            g_annot.ends = np.hstack([g_annot.ends, int(end)])
-
-    return g_annot
+            super(GeneAnnotation, self).__format__(format)
