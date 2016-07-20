@@ -245,11 +245,10 @@ class GeneAnnotation:
         return BedTool(self.format(format), from_string=True)
 
     def merge_small_gap(self, gap=25):
-        # from pybedtools import BedTool
-        # bed = BedTool(self.format('bed6'), from_string=True)
         gaps = self.introns
         # if it has at least one small gap, call bedtools merge
-        numb_of_small_gaps = np.sum(gaps[gaps <= gap])
+        # (checking b4 running increased the speed of this function)
+        numb_of_small_gaps = np.sum(gaps <= gap)
         if numb_of_small_gaps:
             # self = self.merge_small_gap(gap)
             bed = self.BedTool('bed6')
