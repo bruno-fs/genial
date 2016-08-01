@@ -17,7 +17,7 @@ def detect_mime(path_to_file, uncompress=False):
 
 def magic_open(path_to_file, mode='rt'):
     import gzip
-    path_to_file = os.path.abspath(path_to_file)
+    path_to_file = os.path.realpath(path_to_file)
     mime = detect_mime(path_to_file)
 
     if mime == 'text/plain':
