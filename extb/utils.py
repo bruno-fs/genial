@@ -17,6 +17,7 @@ def detect_mime(path_to_file, uncompress=False):
 
 def magic_open(path_to_file, mode='rt'):
     import gzip
+    # follow symlinks
     path_to_file = os.path.realpath(path_to_file)
     mime = detect_mime(path_to_file)
 
@@ -50,7 +51,7 @@ def stringfy(obj):
     All because I was to lazy to type str(obj) for some objects and array2str(obj)
     for others.
 
-    A Better solution was to create a wrapper that would do the job for me:
+    A Better solution was to create a wrapper to do the job for me:
     stringfy!
     """
 
