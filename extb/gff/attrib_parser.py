@@ -1,5 +1,5 @@
 import re
-
+from warnings import warn
 from extb.exceptions import ParseError, UnsupportedFile
 
 
@@ -78,8 +78,8 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
             k, v = g.group(1, 2)
         except AttributeError:
             # TODO: use/make more specific exceptions
-            raise ParseError('regex for %s failed to parse_to_dict %s' % (file_format, attributes))
-
+            # raise ParseError('regex for %s failed to parse_to_dict %s' % (file_format, attributes))
+            warn('regex for %s failed to parse attribute %s' % (file_format, att))
         # if file_format == 'gff3' and re.match(r'ID|Parent', k):
         #     has_ids_prepended = re.match(r'^(transcript|gene):', v)
         #     if has_ids_prepended:
@@ -95,11 +95,11 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
         #
         #         if id_prepended not in attrib_dict:
         #             attrib_dict[id_prepended] = v
+        else:
+            has_ids_prepended = re.match(r'^(\w+):', v)
+            if has_ids_prepended:
+                v = re.sub(r'^\w+:', '', v)
 
-        has_ids_prepended = re.match(r'^(\w+):', v)
-        if has_ids_prepended:
-            v = re.sub(r'^\w+:', '', v)
-
-        attrib_dict[k] = v
+            attrib_dict[k] = v
 
     return attrib_dict
