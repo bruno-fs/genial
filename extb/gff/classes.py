@@ -79,9 +79,13 @@ class GffLine(object):
         """
         if self.file_format == 'gff3':
             # if 'Parent' in self.attrib_dict:
-            parents = self.attrib_dict['Parent'].split(",")
-            for parent in parents:
-                yield parent
+            try:
+                parents = self.attrib_dict['Parent'].split(",")
+            except KeyError:
+                raise KeyError
+            else:
+                for parent in parents:
+                    yield parent
         else:
             yield self.transcript_id
 
