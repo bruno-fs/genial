@@ -24,11 +24,11 @@ def add_exon(gff_dict: GFF, gff_line: GffLine):
     ends = intern(gff_line.feature + '_ends')
 
     # deal with gff with multiple parents_of_exon
-    try:
-        rna_ids = gff_line.parents_of_exon
-    except KeyError:
-        pass
-    else:
+    # try:
+    rna_ids = gff_line.parents_of_exon
+    # except KeyError:
+    #     pass
+    if len(rna_ids) > 0:
         for rna_id in rna_ids:
             if rna_id not in gff_dict:
                 gff_dict[rna_id] = gff_line
