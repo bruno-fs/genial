@@ -94,6 +94,8 @@ def main():
 
         if c > 0:
             return False
+        else:
+            return True
 
     # list of args to be used on filter function
     args = [argv.min_exon_count,
