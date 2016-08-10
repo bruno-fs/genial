@@ -28,7 +28,7 @@ def add_exon(gff_dict: GFF, gff_line: GffLine):
     rna_ids = gff_line.parents_of_exon
     # except KeyError:
     #     pass
-    if len(rna_ids) > 0:
+    if len(list(rna_ids)) > 0:
         for rna_id in rna_ids:
             if rna_id not in gff_dict:
                 gff_dict[rna_id] = gff_line
