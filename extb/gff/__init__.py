@@ -24,24 +24,29 @@ def add_exon(gff_dict: GFF, gff_line: GffLine):
     ends = intern(gff_line.feature + '_ends')
 
     # deal with gff with multiple parents_of_exon
-    for rna_id in gff_line.parents_of_exon:
-        if rna_id not in gff_dict:
-            gff_dict[rna_id] = gff_line
-            gff_dict.add_attribs(rna_id, gff_line)
+    try:
+        rna_ids = gff_line.parents_of_exon
+    except KeyError:
+        pass
+    else:
+        for rna_id in rna_ids:
+            if rna_id not in gff_dict:
+                gff_dict[rna_id] = gff_line
+                gff_dict.add_attribs(rna_id, gff_line)
 
-        gff_dict[rna_id][starts] += '%s,' % gff_line.start
-        gff_dict[rna_id][ends] += '%s,' % gff_line.end
-        if gff_line.feature == 'CDS':
-            gff_dict[rna_id].frame += '%s,' % gff_line.frame
+            gff_dict[rna_id][starts] += '%s,' % gff_line.start
+            gff_dict[rna_id][ends] += '%s,' % gff_line.end
+            if gff_line.feature == 'CDS':
+                gff_dict[rna_id].frame += '%s,' % gff_line.frame
 
-        # detect orientation of gff
-        # ToDo: create another function to do this
-        if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
-            arr = str2array(gff_dict[rna_id][starts])
-            if len(arr) > 1:
-                dif = arr[-1] - arr[0]
+            # detect orientation of gff
+            # ToDo: create another function to do this
+            if gff_dict.orientation == 'Unknown' and gff_line.strand == '-':
+                arr = str2array(gff_dict[rna_id][starts])
+                if len(arr) > 1:
+                    dif = arr[-1] - arr[0]
 
-                if dif > 0:
-                    gff_dict.orientation = 'genomic'
-                elif dif < 0:
-                    gff_dict.orientation = 'transcript'
+                    if dif > 0:
+                        gff_dict.orientation = 'genomic'
+                    elif dif < 0:
+                        gff_dict.orientation = 'transcript'
