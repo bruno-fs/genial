@@ -134,6 +134,56 @@ def read_extb(filepath):
     
     return extb
 
+
+def read_bed(filepath,cols=12):
+    """
+    returns a pandas dataframe with the content of the specified BED12 file. 
+    transcript_ID is used as index
+    
+    Parameters
+    ----------
+    filepath: path to file
+    cols: # columns in the bedfile    
+
+    Columns
+    -------
+    
+    chrom 
+    chromStart 
+    chromEnd 
+    name 
+    score 
+    strand 
+    thickStart 
+    thickEnd 
+    itemRgb 
+    blockCount 
+    blockSizes --> exons
+    blockStarts 
+
+    
+    """
+      
+    columns = """
+    chrom 
+    chromStart 
+    chromEnd 
+    name 
+    score 
+    strand 
+    thickStart 
+    thickEnd 
+    itemRgb 
+    blockCount 
+    exons 
+    blockStart
+    """.split()
+    
+    bed = pd.read_csv(filepath, sep='\t', header=None, names=columns[:cols])
+    bed.index = bed.name
+    return bed
+
+
 class AttribDict(dict):
     # attributes are dict keys =D
     # [source](http://goodcode.io/articles/python-dict-object/)
