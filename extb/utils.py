@@ -2,6 +2,7 @@ from sys import intern
 import os
 
 import numpy as np
+import pandas as pd
 from .exceptions import UnsupportedFile
 
 
@@ -86,6 +87,52 @@ def str2array(string):
 #         else:
 #             return super(Array, self).__str__()
 
+
+def read_extb(filepath):
+    """
+    returns a pandas dataframe with the content of the specified extb file. 
+    transcript_ID is used as index
+    
+    EXTB (EXon TaBle) columns:
+    
+      'organism'         # 0
+      'assembly_version' # 1
+      'coords'           # 2
+      'strand'           # 3
+      'biotype'          # 4
+      'gene_name'        # 5
+      'gene_id'          # 6
+      'transcript_id'    # 7
+      'protein_id'       # 8
+      'exons'            # 9
+      'introns'          #10
+      'cds'              #11
+      'phase'            #12
+      'coords_array'     #13
+      'ORF_coords'       #14
+      
+    """
+    columns = ['organism',        # 0
+              'assembly_version', # 1
+              'coords',           # 2
+              'strand',           # 3
+              'biotype',          # 4
+              'gene_name',        # 5
+              'gene_id',          # 6
+              'transcript_id',    # 7
+              'protein_id',       # 8
+              'exons',            # 9
+              'introns',          #10
+              'cds',              #11
+              'phase',            #12
+              'coords_array',     #13
+              'ORF_coords',       #14
+              ]
+    extb = pd.read_csv(filepath, sep='\t', header=None)
+    extb.columns = columns
+    extb.index = extb.transcript_id
+    
+    return extb
 
 class AttribDict(dict):
     # attributes are dict keys =D
