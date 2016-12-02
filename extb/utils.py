@@ -3,7 +3,17 @@ import os
 
 import numpy as np
 import pandas as pd
+import re
 from .exceptions import UnsupportedFile
+
+
+def nice_sort(l):
+    """ Sort given iterable in the way that humans expect.
+    src: http://stackoverflow.com/a/2669120
+    """
+    convert = lambda text: int(text) if text.isdigit() else text
+    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    return sorted(l, key=alphanum_key)
 
 
 def detect_mime(path_to_file, uncompress=False):
@@ -11,7 +21,6 @@ def detect_mime(path_to_file, uncompress=False):
     mime = magic.Magic(mime=True, uncompress=uncompress)
     mime_from_file = mime.from_file(path_to_file)
     # magic returns byte, not str
-    # ToDo: remove decode when issue #98 is closed
     # mime_from_file = mime_from_file.decode()
     return mime_from_file
 
@@ -44,8 +53,53 @@ def array2str(arr):
     return ','.join(str(x) for x in arr)
 
 
+def str2array(string):
+    return np.fromstring(string, sep=',', dtype=np.int64)
+
+
+def format_intervals(iterable_with_numbers):
+    n_list = sorted(iterable_with_numbers)
+    dist = 0
+    curr = n_list[0]
+    intervals = []
+
+    for i, n in enumerate(n_list):
+        if n - curr != dist:
+            next_n = n_list[i - 1]
+
+            if next_n - curr == 0:
+                intervals.append(str(curr))
+
+            elif next_n - curr == 1:
+                intervals.append(str(curr))
+                intervals.append(str(next_n))
+
+            else:
+                intervals.append('%d-%d' % (curr, next_n))
+
+            curr = n
+            dist = 1
+
+        else:
+            dist += 1
+
+    if n - curr == 0:
+        intervals.append(str(curr))
+
+    elif n - curr == 1:
+        intervals.append(str(curr))
+        intervals.append(str(n))
+
+    else:
+        intervals.append('%d-%d' % (curr, n))
+
+    return intervals
+
+
 def stringfy(obj):
     """
+    Transform an numpy array in a string (same as array2str) and any other kind of obj in a string.
+
     I was subclassing numpy.ndarray ONLY to override its print method.
     Even though it works, I'd have to ALWAYS import it and always enforce its use.
 
@@ -59,33 +113,6 @@ def stringfy(obj):
     if isinstance(obj, np.ndarray):
         return array2str(obj)
     return str(obj)
-
-
-def str2array(string):
-    return np.fromstring(string, sep=',', dtype=np.int64)
-    # import re
-    # string = re.sub(r',$', '', string)
-    # items = string.split(',')
-    # size = len(items)
-    # buffer = np.array([int(x) for x in items])
-    # arr = Array(shape=(size,), buffer=buffer, dtype=np.int64)
-    # return arr
-
-# # noinspection PyClassHasNoInit
-# class Array(np.ndarray):
-#     """a subclass from numpy.ndarray
-#
-#     the ONLY difference is its string representation for 1D arrays
-#     (with shape = (n, )) will be provided by array2str
-#
-#     """
-#
-#     def __str__(self):
-#         tup = self.shape
-#         if len(tup) == 1:
-#             return array2str(self)
-#         else:
-#             return super(Array, self).__str__()
 
 
 def read_extb(filepath):
@@ -135,7 +162,7 @@ def read_extb(filepath):
     return extb
 
 
-def read_bed(filepath,cols=12):
+def read_bed(filepath, cols=12):
     """
     returns a pandas dataframe with the content of the specified BED12 file. 
     transcript_ID is used as index
@@ -161,7 +188,6 @@ def read_bed(filepath,cols=12):
     blockSizes --> exons
     blockStarts 
 
-    
     """
       
     columns = """
