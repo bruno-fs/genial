@@ -1,4 +1,4 @@
-from gannots.exceptions import UnsupportedFile, ParseError
+from GenIAL.exceptions import UnsupportedFile, ParseError
 from .attrib_parser import attributes_parser
 from .classes import GffLine
 

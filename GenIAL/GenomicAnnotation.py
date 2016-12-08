@@ -45,7 +45,7 @@ class GeneAnnotation:
         starts_offset: 0 or 1 (default = 1)
             GTF/GFF => use 1
             BED => use 0
-            gannots => use 0
+            extb => use 0
         orientation
         kwargs
         """
@@ -295,7 +295,7 @@ class GeneAnnotation:
         return '{} {}'.format(self.transcript_id, stringfy(self.exons))
 
     def format(self, format):
-        if format == 'gannots':
+        if format == 'extb':
             chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
             extb = [
                 # self.internal_exons,

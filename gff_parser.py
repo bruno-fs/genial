@@ -4,9 +4,9 @@ import argparse as argp
 import os
 import sys
 
-from gannots.gff import parse_to_dict
-from gannots.utils import magic_open
-from gannots.GenomicAnnotation import GeneAnnotation
+from GenIAL.gff import parse_to_dict
+from GenIAL.utils import magic_open
+from GenIAL.GenomicAnnotation import GeneAnnotation
 
 
 def save_to_file(gff_dict, f_out: str, out_format='bed'):
@@ -87,10 +87,10 @@ def main():
             f_out = open(args.output, 'w')
 
     elif args.lazy_output_naming:
-        if os.path.exists(species_name + '.gannots'):
-            sys.exit('ERROR: %s.gannots already exists!!!' % species_name)
+        if os.path.exists(species_name + '.extb'):
+            sys.exit('ERROR: %s.extb already exists!!!' % species_name)
         else:
-            f_out = open(species_name + '.gannots', 'w')
+            f_out = open(species_name + '.extb', 'w')
 
     gff_dict = parse_to_dict(f_in)   # , input_format)
     gff_dict.specie = species_name
