@@ -2,7 +2,7 @@ import re
 
 from .classes import GFF, GffLine
 from .line_parser import guess_kind_of_gff, line_parser
-from extb.utils import str2array
+from gannots.utils import str2array
 
 
 def parse_to_dict(file_handle, ff='Unknown'):

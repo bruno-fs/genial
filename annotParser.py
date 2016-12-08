@@ -6,8 +6,8 @@ import sys
 
 import numpy as np
 
-from extb.utils import magic_open
-from extb import parse, input_formats, output_formats
+from gannots.utils import magic_open
+from gannots import parse, input_formats, output_formats
 
 
 def main():

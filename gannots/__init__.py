@@ -4,7 +4,7 @@ from .GenomicAnnotation import GeneAnnotation
 from .utils import str2array
 
 input_formats = {'gff3', 'gtf', 'bed'}
-output_formats = {'bed', 'extb'}
+output_formats = {'bed', 'gannots'}
 
 
 def bed12_to_GeneAnnot(bed12):

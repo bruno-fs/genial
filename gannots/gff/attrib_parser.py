@@ -1,6 +1,6 @@
 import re
 from warnings import warn
-from extb.exceptions import ParseError, UnsupportedFile
+from gannots.exceptions import ParseError, UnsupportedFile
 
 
 def attributes_parser(attributes: str, file_format='gff3') -> dict:
@@ -65,7 +65,7 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
     # finally, get a list of attributes
     attrib_list = attributes.split(';')
 
-    from extb.utils import InternDict
+    from gannots.utils import InternDict
     attrib_dict = InternDict()
     # attrib_dict = {}
 

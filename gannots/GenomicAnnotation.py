@@ -45,7 +45,7 @@ class GeneAnnotation:
         starts_offset: 0 or 1 (default = 1)
             GTF/GFF => use 1
             BED => use 0
-            extb => use 0
+            gannots => use 0
         orientation
         kwargs
         """
@@ -236,23 +236,33 @@ class GeneAnnotation:
     # def end(self, value):
     #     self.ends[-1] = value
 
-    def BedTool(self, format='bed'):
-        try:
-            from pybedtools import BedTool
-        except ImportError:
-            raise ImportError("pybedtools is required for this function")
-
-        return BedTool(self.format(format), from_string=True)
+    # def BedTool(self, format='bed'):
+    #     try:
+    #         from pybedtools import BedTool
+    #     except ImportError:
+    #         raise ImportError("pybedtools is required for this function")
+    #
+    #     return BedTool(self.format(format), from_string=True)
 
     def merge_small_gap(self, gap=25):
         gaps = self.introns
         # if it has at least one small gap, call bedtools merge
         # (checking b4 running increased the speed of this function)
-        numb_of_small_gaps = np.sum(gaps <= gap)
-        if numb_of_small_gaps:
+        small_gaps = np.sum(gaps <= gap)
+        if small_gaps:
             # self = self.merge_small_gap(gap)
-            bed = self.BedTool('bed6')
-            bed_merged = bed.intersect(bed).merge(d=gap, c='4,5,6', o='distinct')
+            # bed_sorted = self.BedTool(bed, from_string=True)
+
+            bed = self.format('bed6')
+            try:
+                from pybedtools import BedTool
+            except ImportError:
+                raise ImportError("pybedtools is required for this function")
+
+            bed_sorted = BedTool(bed, from_string=True).sort()
+            # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
+            bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
+
             return _bed6_to_GeneAnnot(str(bed_merged))
         return self
 
@@ -266,6 +276,11 @@ class GeneAnnotation:
                 diff = self.starts[-1] - self.starts[0]
                 if diff < 0:
                     self._reverse()
+        #
+        # self.starts = np.sort(self.starts)
+        # self.ends = np.sort(self.ends)
+        # self.cds_starts = np.sort(self.cds_starts)
+        # self.cds_ends = np.sort(self.cds_ends)
 
     def _reverse(self):
         # print('reversing')
@@ -280,7 +295,7 @@ class GeneAnnotation:
         return '{} {}'.format(self.transcript_id, stringfy(self.exons))
 
     def format(self, format):
-        if format == 'extb':
+        if format == 'gannots':
             chr_str = '%s:%s-%s' % (self.chrom, self.start + 1, self.end)
             extb = [
                 # self.internal_exons,
@@ -350,7 +365,7 @@ class GeneAnnotation:
 
                 bed[block] = '\t'.join(stringfy(x) for x in line)
 
-            return '\n'.join(bed)
+            return '\n'.join(bed) + '\n'
 
         else:
             super(GeneAnnotation, self).__format__(format)

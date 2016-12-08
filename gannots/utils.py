@@ -117,7 +117,7 @@ def stringfy(obj):
 
 def read_extb(filepath):
     """
-    returns a pandas dataframe with the content of the specified extb file. 
+    returns a pandas dataframe with the content of the specified gannots file.
     transcript_ID is used as index
     
     EXTB (EXon TaBle) columns:
