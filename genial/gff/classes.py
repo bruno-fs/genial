@@ -2,8 +2,8 @@ import re
 from sys import intern
 from collections import OrderedDict
 
-from GenIAL.gff.attrib_parser import attributes_parser
-from GenIAL.utils import AttribDict, InternDict
+from genial.gff.attrib_parser import attributes_parser
+from genial.utils import AttribDict, InternDict
 
 
 def find_parent(

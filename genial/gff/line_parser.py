@@ -1,4 +1,4 @@
-from GenIAL.exceptions import UnsupportedFile, ParseError
+from genial.exceptions import UnsupportedFile, ParseError
 from .attrib_parser import attributes_parser
 from .classes import GffLine
 

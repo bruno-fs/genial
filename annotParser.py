@@ -6,8 +6,8 @@ import sys
 
 import numpy as np
 
-from GenIAL.utils import magic_open
-from GenIAL import parse, input_formats, output_formats
+from genial.utils import magic_open
+from genial import parse, input_formats, output_formats
 
 
 def main():

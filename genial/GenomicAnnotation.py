@@ -248,23 +248,23 @@ class GeneAnnotation:
         gaps = self.introns
         # if it has at least one small gap, call bedtools merge
         # (checking b4 running increased the speed of this function)
-        small_gaps = np.sum(gaps <= gap)
-        if small_gaps:
+        # small_gaps = np.sum(gaps <= gap)
+        # if small_gaps:
             # self = self.merge_small_gap(gap)
             # bed_sorted = self.BedTool(bed, from_string=True)
 
-            bed = self.format('bed6')
-            try:
-                from pybedtools import BedTool
-            except ImportError:
-                raise ImportError("pybedtools is required for this function")
+        bed = self.format('bed6')
+        try:
+            from pybedtools import BedTool
+        except ImportError:
+            raise ImportError("pybedtools is required for this function")
 
-            bed_sorted = BedTool(bed, from_string=True).sort()
-            # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
-            bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
+        bed_sorted = BedTool(bed, from_string=True).sort()
+        # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
+        bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
 
-            return _bed6_to_GeneAnnot(str(bed_merged))
-        return self
+        return _bed6_to_GeneAnnot(str(bed_merged))
+        # return self
 
     def _fix_orientation(self, orientation='Unknown'):
         if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
