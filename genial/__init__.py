@@ -7,6 +7,7 @@ input_formats = {'gff3', 'gtf', 'bed'}
 output_formats = {'bed', 'extb'}
 
 
+
 def bed12_to_GeneAnnot(bed12):
     """
     01) chrom - The name of the chromosome (e.g. chr3, chrY, chr2_random) or scaffold (e.g. scaffold10671).
