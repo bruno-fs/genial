@@ -1,7 +1,7 @@
 genial: GENome Interactive Annotation Library
 =============================================
 
-.. image:: https://badge.fury.io/py/genial.svg
+.. image:: https://badge.fury.io/py/genial.png
     :target: https://badge.fury.io/py/genial
 
 genial provides *InteractiveAnnotation*, a class that captures coordinates and other features
