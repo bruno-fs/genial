@@ -1,2 +1,3 @@
-include requirements.txt
-include LICENSE.txt
+include *txt
+include *rst
+include MANIFEST.in

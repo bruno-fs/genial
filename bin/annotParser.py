@@ -11,7 +11,7 @@ from genial import parse, input_formats, output_formats
 
 
 def main():
-    ap = argp.ArgumentParser(description="parse annotation files")
+    ap = argp.ArgumentParser(description="parse, filter and convert annotation files")
     ap.add_argument('-i', '--input',
                     help="input file. to read from pipe, use the argument 'stdin'")
     ap.add_argument('-o', '--output',
@@ -59,8 +59,8 @@ def main():
         if argv.output == sys.stdout:
             f_out = sys.stdout
 
-        elif os.path.exists(argv.output):
-            raise SystemExit('ERROR: %s already exists!!!' % argv.output)
+        # elif os.path.exists(argv.output):
+        #     raise SystemExit('ERROR: %s already exists!!!' % argv.output)
 
         else:
             # dirname = os.path.dirname(argv.output)

@@ -7,9 +7,12 @@ version = '0.1'
 
 scripts = glob.glob('bin/*')
 requirements = open('requirements.txt').readlines()
+readme = open('README.rst').read()
 
 setup(
     name='genial',
+    description='GENome Interactive Annotation Library',
+    long_description=readme,
     author='Bruno F Souza',
     author_email='fsouza.bruno@gmail.com',
     version=version,

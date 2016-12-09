@@ -1,7 +1,7 @@
 import re
 import numpy as np
 
-from .utils import str2array, stringfy
+from .utils import str2array, stringfy, sort_intervals
 
 
 def _bed6_to_GeneAnnot(bed6):
@@ -11,8 +11,8 @@ def _bed6_to_GeneAnnot(bed6):
     for line in lines:
         chrom, start, end, name, score, strand = line.split('\t')
         if g_annot == 0:
-            g_annot = GeneAnnotation(start, end, strand,
-                chrom=chrom, transcript_id=name, starts_offset=0)
+            g_annot = InteractiveAnnotation(start, end, strand,
+                                            chrom=chrom, transcript_id=name, starts_offset=0)
         else:
             g_annot.starts = np.hstack([g_annot.starts, int(start)])
             g_annot.ends = np.hstack([g_annot.ends, int(end)])
@@ -20,21 +20,13 @@ def _bed6_to_GeneAnnot(bed6):
     return g_annot
 
 
-class GeneAnnotation:
-    # starts = np.array([np.nan])
-    # ends = np.array([np.nan])
-    # strand = None
-    # cds_starts = np.array([np.nan])
-    # cds_ends = np.array([np.nan])
-    # chrom = None
-    # transcript_id = None
-    # gene_id = None
-    # thickStart = None
-    # thickEnd = None
-
+class InteractiveAnnotation:
     def __init__(self, starts, ends, strand, cds_starts=None, cds_ends=None,
                  starts_offset=1, orientation='Unknown', **kwargs):
         """
+
+        A interactive and flexible genomic anotation.
+
         Parameters
         ----------
         starts
@@ -244,43 +236,88 @@ class GeneAnnotation:
     #
     #     return BedTool(self.format(format), from_string=True)
 
-    def merge_small_gap(self, gap=25):
-        gaps = self.introns
-        # if it has at least one small gap, call bedtools merge
-        # (checking b4 running increased the speed of this function)
-        # small_gaps = np.sum(gaps <= gap)
-        # if small_gaps:
-            # self = self.merge_small_gap(gap)
-            # bed_sorted = self.BedTool(bed, from_string=True)
+    def merge_small_gaps(self, gap=15, pybedtools=False):
+        """
+        Merge gaps smaller or equals the specified amount.
+        Useful to remove gaps that should not be treated as introns.
 
-        bed = self.format('bed6')
-        try:
-            from pybedtools import BedTool
-        except ImportError:
-            raise ImportError("pybedtools is required for this function")
+        Reference: http://codereview.stackexchange.com/a/69249
 
-        bed_sorted = BedTool(bed, from_string=True).sort()
-        # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
-        bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
+        Parameters
+        ----------
+        gap:    int
+            size of the gap
+        pybedtools: Boolean
+            use pybedtools (and bedtools). should be removed in future releases.
 
-        return _bed6_to_GeneAnnot(str(bed_merged))
-        # return self
+        Returns
+        -------
+
+        a new GeneAnnotation with gaps properly merged
+
+        """
+
+        if pybedtools:
+            # if it has at least one small gap, call bedtools merge
+            bed = self.format('bed6')
+            try:
+                from pybedtools import BedTool
+            except ImportError:
+                raise ImportError("pybedtools is required. "
+                                  "Install it or run the function with pybedtools=False"
+                                  "Tip:pip install pybedtools")
+
+            bed_sorted = BedTool(bed, from_string=True).sort()
+            # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
+            bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
+
+            return _bed6_to_GeneAnnot(str(bed_merged))
+
+        else:
+            #ToDO: add argument to allow this to be done to cds_starts / cds_ends?
+
+            intervals = [(s, e) for s, e in zip(self.starts, self.ends)]
+            # sorted_by_lower_bound = sorted(intervals, key=lambda tup: tup[0])
+            # hopefully we dont need to sort this data... we may activate this for some messed up data, though
+            merged = []
+
+            for higher in intervals:  # sorted_by_lower_bound: # intervals already sorted.
+                if not merged:
+                    merged.append(higher)
+                else:
+                    lower = merged[-1]
+                    # test for intersection between lower and higher:
+                    # we know via sorting that lower[0] <= higher[0]
+                    if higher[0] <= lower[1] + gap:
+                        upper_bound = max(lower[1], higher[1])
+                        merged[-1] = (lower[0], upper_bound)  # replace by merged interval
+                    else:
+                        merged.append(higher)
+
+            starts, ends = zip(*merged)
+            # self.starts = np.array(starts, dtype=np.int64)
+            # self.ends = np.array(ends, dtype=np.int64)
+            setattr(self, 'starts', np.array(starts, dtype=np.int64))
+            setattr(self, 'ends', np.array(ends, dtype=np.int64))
+
+        return self
 
     def _fix_orientation(self, orientation='Unknown'):
-        if orientation != 'genomic' and self.strand == '-' and len(self) > 1:
-
-            if orientation == 'transcript':
-                self._reverse()
-
-            elif orientation == 'Unknown':
-                diff = self.starts[-1] - self.starts[0]
-                if diff < 0:
-                    self._reverse()
+        # if orientation == 'transcript' and len(self) > 1:
         #
-        # self.starts = np.sort(self.starts)
-        # self.ends = np.sort(self.ends)
-        # self.cds_starts = np.sort(self.cds_starts)
-        # self.cds_ends = np.sort(self.cds_ends)
+        #     if orientation == 'transcript':
+        #         self._reverse()
+        #
+        #     elif orientation == 'Unknown':
+        #         diff = self.starts[-1] - self.starts[0]
+        #         if diff < 0:
+        #             self._reverse()
+        #
+        # if orientation == 'Unknown' and len(self) > 1:
+        if orientation != 'genomic' and self.blockCount() > 1:
+            self.starts, self.ends = sort_intervals(self.starts, self.ends)
+            if not np.isnan(np.sum(self.cds_starts)):
+                self.cds_starts, self.cds_ends = sort_intervals(self.cds_starts, self.cds_ends)
 
     def _reverse(self):
         # print('reversing')
@@ -368,4 +405,4 @@ class GeneAnnotation:
             return '\n'.join(bed) + '\n'
 
         else:
-            super(GeneAnnotation, self).__format__(format)
+            super(InteractiveAnnotation, self).__format__(format)

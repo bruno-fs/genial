@@ -1,6 +1,6 @@
 import re
 
-from .GenomicAnnotation import GeneAnnotation
+from .GenomeAnnotation import InteractiveAnnotation
 from .utils import str2array
 
 input_formats = {'gff3', 'gtf', 'bed'}
@@ -35,13 +35,13 @@ def bed12_to_GeneAnnot(bed12):
     thickEnd = bed_field[7]
     itemRgb = bed_field[8]
 
-    return GeneAnnotation(starts, ends, strand,
-                          chrom=chrom,
-                          transcript_id=name,
-                          thickStart=thickStart,
-                          thickEnd=thickEnd,
-                          starts_offset=0,
-                          itemRgb=itemRgb)
+    return InteractiveAnnotation(starts, ends, strand,
+                                 chrom=chrom,
+                                 transcript_id=name,
+                                 thickStart=thickStart,
+                                 thickEnd=thickEnd,
+                                 starts_offset=0,
+                                 itemRgb=itemRgb)
 
 
 def parse(file_handle, format):
@@ -67,7 +67,7 @@ def parse(file_handle, format):
                 gff[tranx].exon_starts = gff[tranx].CDS_starts
                 gff[tranx].exon_ends = gff[tranx].CDS_ends
 
-            annotation = GeneAnnotation(
+            annotation = InteractiveAnnotation(
                 starts=gff[tranx].exon_starts,
                 ends=gff[tranx].exon_ends,
                 strand=gff[tranx].strand,

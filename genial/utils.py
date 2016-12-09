@@ -7,6 +7,15 @@ import re
 from .exceptions import UnsupportedFile
 
 
+def sort_intervals(starts, ends):
+    intervals = [(s, e) for s, e in zip(starts, ends)]
+    sorted_by_lower_bound = sorted(intervals, key=lambda tup: tup[0])
+    starts, ends = zip(*sorted_by_lower_bound)
+    starts = np.array(starts, dtype=np.int64)
+    ends = np.array(ends, dtype=np.int64)
+    return starts, ends
+
+
 def nice_sort(l):
     """ Sort given iterable in the way that humans expect.
     src: http://stackoverflow.com/a/2669120

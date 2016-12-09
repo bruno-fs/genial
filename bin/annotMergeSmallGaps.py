@@ -11,7 +11,8 @@ from genial import parse, input_formats, output_formats
 
 
 def main():
-    ap = argp.ArgumentParser(description="merge small gaps from annotation files")
+    ap = argp.ArgumentParser(description="Merge exons separated by small gaps. "
+                                         "Can also be used to convert different kinds of annotations.")
     ap.add_argument('-i', '--input',
                     help="input file. to read from pipe, use the argument 'stdin'")
     ap.add_argument('-o', '--output',
@@ -22,7 +23,8 @@ def main():
     ap.add_argument('-t', '--output_format',
                     help='output file format (supported formats: %s)' % ', '.join(output_formats),
                     default='bed')
-    ap.add_argument('-s', '--small_gap_size', type=int, default=9)
+    ap.add_argument('-s', '--small_gap_size', type=int, default=9,
+                    help='gap size. exons separated by gaps with this size or less should be removed')
 
 
     args = ap.parse_args()
@@ -65,9 +67,10 @@ def main():
     for annotation in parse(f_in, input_format):
         if annotation.blockCount() > 1:
             small_gap = args.small_gap_size
-            annotation = annotation.merge_small_gap(small_gap)
+            annotation = annotation.merge_small_gaps(small_gap)
 
         # try:
+        # print(annotation.blockCount())
         print(annotation.format(output_format), file=f_out, sep='\t')
         # except IndexError:
         #     print(annotation)
