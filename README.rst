@@ -89,6 +89,6 @@ for a systemwide instalation on ubuntu, you can simply do:
 Acknowledgements
 ----------------
 
-I'd like to thank Marcelo Reis (msreis_) for suggesting the cool name o the library :D
+I'd like to thank Marcelo Reis (msreis_) for suggesting the cool name of this library :D
 
 .. _msreis: https://github.com/msreis
