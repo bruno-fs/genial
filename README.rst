@@ -4,8 +4,11 @@ genial: GENome Interactive Annotation Library
 .. image:: https://badge.fury.io/py/genial.png
     :target: https://badge.fury.io/py/genial
 
-genial provides *InteractiveAnnotation*, a class that captures coordinates and other features
-representing Annotations and parser functions to create this class from different annotations files.
+This library provides `InteractiveAnnotation`, a high level representation of genome annotations,
+allowing users to easily extract information, manipulate and reformat commonly used annotation
+formats such as GFF and BED.
+
+The package is currently in alpha stage and only runs on `python3`.
 
 For convenience, we provided two CLI utilities:
 
@@ -77,7 +80,7 @@ Supported formats
 Instalation instructions
 ------------------------
 
-for a systemwide instalation on ubuntu, you can simply do:
+for a systemwide instalation on ubuntu:
 
 .. code-block:: bash
 
@@ -85,10 +88,12 @@ for a systemwide instalation on ubuntu, you can simply do:
     sudo pip3 install genial
 
 
-
 Acknowledgements
 ----------------
 
-I'd like to thank Marcelo Reis (msreis_) for suggesting the cool name o the library :D
+I'd like to thank my friends, `Lucas Silva`_ and David Pires, for all the help and encouragement to 
+learn python and software development. Without them, I'd hardly have found so much fun coding and
+this project would never came to be. I also thank `Marcelo Reis`_ for the help naming this library :D
 
-.. _msreis: https://github.com/msreis
+.. _Marcelo Reis: https://github.com/msreis
+.. _Lucas Silva: https://github.com/LucasSilvaFerreira
