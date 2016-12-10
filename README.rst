@@ -22,7 +22,7 @@ Scripts
 -------
 For convenience, we provide two CLI utilities: `annotParser.py` and `annotMergeSmallGap.py`.
 
-.. code-block:: bash
+.. code-block::
 
     $ annotParser.py -h
     usage: annotParser.py [-h] [-i INPUT] [-o OUTPUT] [-f {gff3,gtf,bed}]
@@ -51,7 +51,7 @@ For convenience, we provide two CLI utilities: `annotParser.py` and `annotMergeS
 
 
 
-.. code-block:: bash
+.. code-block::
 
     $ annotMergeSmallGaps.py -h
     usage: annotMergeSmallGaps.py [-h] [-i INPUT] [-o OUTPUT] [-f {gff3,bed,gtf}]

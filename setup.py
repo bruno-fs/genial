@@ -1,7 +1,7 @@
 from setuptools import setup
 import glob
 
-version = '0.1.a1'
+version = '0.1.0a1'
 
 scripts = glob.glob('bin/*')
 requirements = open('requirements.txt').readlines()
