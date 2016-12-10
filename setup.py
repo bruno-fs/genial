@@ -1,13 +1,11 @@
-from distutils.core import setup
+from setuptools import setup
 import glob
 
-# # load version directly from the module
-# version = __import__('genial').version
-version = '0.1'
+version = '0.1.a1'
 
 scripts = glob.glob('bin/*')
 requirements = open('requirements.txt').readlines()
-readme = open('README.rst').read()
+readme = '\n' + open('README.rst').read()
 
 setup(
     name='genial',
@@ -16,7 +14,8 @@ setup(
     author='Bruno F Souza',
     author_email='fsouza.bruno@gmail.com',
     version=version,
-    packages=['genial', 'genial/gff'],
+    packages=['genial',
+              'genial.gff'],
     scripts=scripts,
     url='https://github.com/varnion/genial',
     license='BSD',

@@ -4,8 +4,6 @@ import argparse as argp
 import os
 import sys
 
-import numpy as np
-
 from genial.utils import magic_open
 from genial import parse, input_formats, output_formats
 
@@ -18,13 +16,15 @@ def main():
     ap.add_argument('-o', '--output',
                     help='output file', default=sys.stdout)
     ap.add_argument('-f', '--input_format',
-                    help='input file format (supported formats: %s)' % ', '.join(input_formats),
-                    default='bed')
+                    help='input file format',  # (supported formats: %s)' % ', '.join(input_formats),
+                    default='bed',
+                    choices=input_formats)
     ap.add_argument('-t', '--output_format',
-                    help='output file format (supported formats: %s)' % ', '.join(output_formats),
-                    default='bed')
+                    help='output file format',  # (supported formats: %s)' % ', '.join(output_formats),
+                    default='bed',
+                    choices=output_formats)
     ap.add_argument('-s', '--small_gap_size', type=int, default=9,
-                    help='gap size. exons separated by gaps with this size or less should be removed')
+                    help='gap size.')
 
 
     args = ap.parse_args()
@@ -69,11 +69,7 @@ def main():
             small_gap = args.small_gap_size
             annotation = annotation.merge_small_gaps(small_gap)
 
-        # try:
-        # print(annotation.blockCount())
         print(annotation.format(output_format), file=f_out, sep='\t')
-        # except IndexError:
-        #     print(annotation)
 
     f_in.close()
     f_out.close()

@@ -6,11 +6,11 @@ genial: GENome Interactive Annotation Library
 
 This library provides `InteractiveAnnotation`, a high level representation of genome annotations,
 allowing users to easily extract information, manipulate and reformat commonly used annotation
-formats such as GFF and BED.
+files such as GFF and BED.
 
 The package is currently in alpha stage and only runs on `python3`.
 
-For convenience, we provided two CLI utilities:
+For convenience, we provide two CLI utilities:
 
 .. code-block:: bash
 
@@ -72,9 +72,9 @@ A more advanced usage can be achieved importing the library.
 Supported formats
 -----------------
 
-* Input: GFF3, GTF, bed
+* Input: BED, GFF3, GTF
 
-* Output: bed
+* Output: BED
 
 
 Instalation instructions

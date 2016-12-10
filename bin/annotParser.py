@@ -11,25 +11,30 @@ from genial import parse, input_formats, output_formats
 
 
 def main():
-    ap = argp.ArgumentParser(description="parse, filter and convert annotation files")
+    ap = argp.ArgumentParser(
+        description="Parse, filter and convert annotation files",
+        )
     ap.add_argument('-i', '--input',
                     help="input file. to read from pipe, use the argument 'stdin'")
     ap.add_argument('-o', '--output',
-                    help='output file', default=sys.stdout)
+                    help='output file', default='stdout')
     ap.add_argument('-f', '--input_format',
-                    help='input file format (supported formats: %s)' % ', '.join(input_formats),
-                    default='bed')
+                    help='input file format',  # (supported formats: %s)' % ', '.join(input_formats),
+                    default='bed',
+                    choices=input_formats)
     ap.add_argument('-t', '--output_format',
-                    help='output file format (supported formats: %s)' % ', '.join(output_formats),
-                    default='bed')
+                    help='output file format',  # (supported formats: %s)' % ', '.join(output_formats),
+                    default='bed',
+                    choices=output_formats)
+
     ap.add_argument('-n', '--min_exon_count', type=int, default=1,
-                    help='min number of exons (inclusive)')
+                    help='min number of exons')
 
     ap.add_argument('-igs', '--ignore_gaps_smaller_than', type=int, default=False)
     ap.add_argument('-igb', '--ignore_gaps_bigger_than', type=int, default=False)
 
     ap.add_argument('-v', '--invert_match', default=False, action='store_true',
-                    help='only return false results (similar to grep -v)',)
+                    help='select non matching annotations (similar to grep -v)',)
 
     argv = ap.parse_args()
 
@@ -56,7 +61,7 @@ def main():
         quit()
 
     if argv.output:
-        if argv.output == sys.stdout:
+        if argv.output == 'stdout':
             f_out = sys.stdout
 
         # elif os.path.exists(argv.output):
@@ -68,7 +73,7 @@ def main():
             # print('created dir', dirname, file=sys.stderr)
             f_out = open(argv.output, 'w')
 
-    def filter(annotation, min_exon_count, ignore_small_gaps, ignore_big_gaps):
+    def filter(annotation, min_exon_count, small_gap, huge_gap):
         c = 0
 
         if annotation.blockCount() < min_exon_count:
@@ -77,16 +82,14 @@ def main():
 
         elif annotation.blockCount() > 1:
             # ignore small introns
-            if ignore_small_gaps:
-                small_gap = ignore_small_gaps
+            if small_gap:
                 gaps = annotation.introns
                 small_gaps_count = np.sum(gaps < small_gap)
                 if small_gaps_count > 0:
                     c += 1
 
             # ignore HUGE introns
-            if ignore_big_gaps:
-                huge_gap = ignore_big_gaps
+            if huge_gap:
                 gaps = annotation.introns
                 huge_gaps_count = np.sum(gaps > huge_gap)
                 if huge_gaps_count > 0:
