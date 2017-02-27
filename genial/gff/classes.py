@@ -56,7 +56,7 @@ class GffLine(object):
 
         assert type(line) is str, '%s not a string' % line
 
-        self.field = line.strip().split('\t')
+        self.field = line.strip('\n').split('\t')
         if len(self.field) != 9:
             raise Exception('%s doesnt have 9 fields' % line)
 

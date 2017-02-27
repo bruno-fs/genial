@@ -4,7 +4,7 @@ from .GenomeAnnotation import InteractiveAnnotation
 from .utils import str2array
 
 input_formats = {'gff3', 'gtf', 'bed'}
-output_formats = {'bed', 'extb'}
+output_formats = {'bed', 'extb', 'bed6', 'intron-bed'}
 
 
 
@@ -44,22 +44,22 @@ def bed12_to_GeneAnnot(bed12):
                                  itemRgb=itemRgb)
 
 
-def parse(file_handle, format):
+def parse(file_handle, input_format):
     """
 
     Parameters
     ----------
     file_handle
-    format
+    input_format
 
     Returns
     -------
 
     """
     # --------------- gff3 / gtf -----------------------------
-    if format in ['gff3', 'gtf']:
+    if input_format in ['gff3', 'gtf']:
         from .gff import parse_to_dict
-        gff = parse_to_dict(file_handle, format)
+        gff = parse_to_dict(file_handle, input_format)
 
         for tranx in gff:
             # ToDo: support fivePrime and threePrime UTR elements
@@ -81,6 +81,6 @@ def parse(file_handle, format):
             yield annotation
 
     # -------------------- bed -----------------------------
-    elif format == 'bed':
+    elif input_format == 'bed':
         for line in file_handle:
             yield bed12_to_GeneAnnot(line)

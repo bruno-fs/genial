@@ -79,7 +79,8 @@ def attributes_parser(attributes: str, file_format='gff3') -> dict:
         except AttributeError:
             # TODO: use/make more specific exceptions
             # raise ParseError('regex for %s failed to parse_to_dict %s' % (file_format, attributes))
-            warn('regex for %s failed to parse attribute %s' % (file_format, att))
+            message = 'regex for {} failed to parse attribute {}'.format(file_format, att)
+            warn(message=message)
         # if file_format == 'gff3' and re.match(r'ID|Parent', k):
         #     has_ids_prepended = re.match(r'^(transcript|gene):', v)
         #     if has_ids_prepended:

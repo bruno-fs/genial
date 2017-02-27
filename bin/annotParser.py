@@ -114,7 +114,9 @@ def main():
     for annotation in parse(f_in, input_format):
 
         if filter(annotation, *args) == match:
-            print(annotation.format(output_format), file=f_out, sep='\t')
+            output = annotation.format(output_format)
+            if output:  # skip empty lines
+                print(output, file=f_out)
 
 
     f_in.close()

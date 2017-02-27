@@ -374,18 +374,42 @@ class InteractiveAnnotation:
             block_count = self.blockCount()
             bed = ['']*block_count
 
-            for block in range(block_count):
+            for idx in range(block_count):
                 line = [
                     self.chrom,
-                    self.starts[block],
-                    self.ends[block],
+                    self.starts[idx],
+                    self.ends[idx],
                     self.transcript_id,
                     "1000",
                     self.strand]
 
-                bed[block] = '\t'.join(stringfy(x) for x in line)
+                bed[idx] = '\t'.join(stringfy(x) for x in line)
 
-            return '\n'.join(bed) + '\n'
+            return '\n'.join(bed)
+
+        elif format == 'intron-bed':
+            block_count = self.blockCount()
+            if block_count > 1:
+                intron_count = block_count - 1
+                intron_names = np.arange(1, intron_count + 1)
+                if self.strand == '-':
+                    intron_names = intron_names[::-1]
+
+                bed = ['']*intron_count
+
+                for idx in range(intron_count):
+                    line = [
+                        self.chrom,
+                        self.ends[idx],
+                        self.starts[idx + 1],
+                        '{}_Intron_{:03d}'.format(self.transcript_id, intron_names[idx]),
+                        "999",
+                        self.strand]
+
+                    bed[idx] = '\t'.join(stringfy(x) for x in line)
+
+                return '\n'.join(bed)
+            return ''
 
         else:
             super(InteractiveAnnotation, self).__format__(format)
