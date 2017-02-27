@@ -236,7 +236,7 @@ class InteractiveAnnotation:
     #
     #     return BedTool(self.format(format), from_string=True)
 
-    def merge_small_gaps(self, gap=15, pybedtools=False):
+    def merge_small_gaps(self, gap=15):
         """
         Merge gaps smaller or equals the specified amount.
         Useful to remove gaps that should not be treated as introns.
@@ -257,48 +257,31 @@ class InteractiveAnnotation:
 
         """
 
-        if pybedtools:
-            # if it has at least one small gap, call bedtools merge
-            bed = self.format('bed6')
-            try:
-                from pybedtools import BedTool
-            except ImportError:
-                raise ImportError("pybedtools is required. "
-                                  "Install it or run the function with pybedtools=False"
-                                  "Tip:pip install pybedtools")
+        #ToDO: add argument to allow this to be done to cds_starts / cds_ends?
 
-            bed_sorted = BedTool(bed, from_string=True).sort()
-            # bed_merged = bed_sorted.intersect(bed_sorted).merge(d=gap, c='4,5,6', o='distinct')
-            bed_merged = bed_sorted.merge(d=gap, c='4,5,6', o='distinct')
+        intervals = [(s, e) for s, e in zip(self.starts, self.ends)]
+        # sorted_by_lower_bound = sorted(intervals, key=lambda tup: tup[0])
+        # hopefully we dont need to sort this data... we may activate this for some messed up data, though
+        merged = []
 
-            return _bed6_to_GeneAnnot(str(bed_merged))
-
-        else:
-            #ToDO: add argument to allow this to be done to cds_starts / cds_ends?
-
-            intervals = [(s, e) for s, e in zip(self.starts, self.ends)]
-            # sorted_by_lower_bound = sorted(intervals, key=lambda tup: tup[0])
-            # hopefully we dont need to sort this data... we may activate this for some messed up data, though
-            merged = []
-
-            for higher in intervals:  # sorted_by_lower_bound: # intervals already sorted.
-                if not merged:
-                    merged.append(higher)
+        for higher in intervals:  # sorted_by_lower_bound: # intervals already sorted.
+            if not merged:
+                merged.append(higher)
+            else:
+                lower = merged[-1]
+                # test for intersection between lower and higher:
+                # we know via sorting that lower[0] <= higher[0]
+                if higher[0] <= lower[1] + gap:
+                    upper_bound = max(lower[1], higher[1])
+                    merged[-1] = (lower[0], upper_bound)  # replace by merged interval
                 else:
-                    lower = merged[-1]
-                    # test for intersection between lower and higher:
-                    # we know via sorting that lower[0] <= higher[0]
-                    if higher[0] <= lower[1] + gap:
-                        upper_bound = max(lower[1], higher[1])
-                        merged[-1] = (lower[0], upper_bound)  # replace by merged interval
-                    else:
-                        merged.append(higher)
+                    merged.append(higher)
 
-            starts, ends = zip(*merged)
-            # self.starts = np.array(starts, dtype=np.int64)
-            # self.ends = np.array(ends, dtype=np.int64)
-            setattr(self, 'starts', np.array(starts, dtype=np.int64))
-            setattr(self, 'ends', np.array(ends, dtype=np.int64))
+        starts, ends = zip(*merged)
+        # self.starts = np.array(starts, dtype=np.int64)
+        # self.ends = np.array(ends, dtype=np.int64)
+        setattr(self, 'starts', np.array(starts, dtype=np.int64))
+        setattr(self, 'ends', np.array(ends, dtype=np.int64))
 
         return self
 
