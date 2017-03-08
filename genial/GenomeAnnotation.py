@@ -286,18 +286,18 @@ class InteractiveAnnotation:
         return self
 
     def _fix_orientation(self, orientation='Unknown'):
-        # if orientation == 'transcript' and len(self) > 1:
-        #
-        #     if orientation == 'transcript':
-        #         self._reverse()
-        #
-        #     elif orientation == 'Unknown':
-        #         diff = self.starts[-1] - self.starts[0]
-        #         if diff < 0:
-        #             self._reverse()
-        #
-        # if orientation == 'Unknown' and len(self) > 1:
-        if orientation != 'genomic' and self.blockCount() > 1:
+        if orientation == 'transcript' and len(self) > 1:
+        
+            if orientation == 'transcript':
+                self._reverse()
+        
+            elif orientation == 'Unknown':
+                diff = self.starts[-1] - self.starts[0]
+                if diff < 0:
+                    self._reverse()
+        
+        if orientation == 'Unknown' and len(self) > 1:
+        #if orientation != 'genomic' and self.blockCount() > 1:
             self.starts, self.ends = sort_intervals(self.starts, self.ends)
             if not np.isnan(np.sum(self.cds_starts)):
                 self.cds_starts, self.cds_ends = sort_intervals(self.cds_starts, self.cds_ends)

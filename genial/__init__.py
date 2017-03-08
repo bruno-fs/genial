@@ -41,7 +41,9 @@ def bed12_to_GeneAnnot(bed12):
                                  thickStart=thickStart,
                                  thickEnd=thickEnd,
                                  starts_offset=0,
-                                 itemRgb=itemRgb)
+                                 itemRgb=itemRgb,
+                                 orientation='genomic'    
+                                )
 
 
 def parse(file_handle, input_format):
